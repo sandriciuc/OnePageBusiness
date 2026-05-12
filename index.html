@@ -404,27 +404,42 @@ async function handleRegister() {
   const password = document.getElementById('registerPassword').value;
   if (!name || !email || !password) { showMsg('registerMsg','Please fill in all fields','error'); return; }
   if (password.length < 6) { showMsg('registerMsg','Password must be at least 6 characters','error'); return; }
-  
-  document.getElementById('registerBtn').disabled = true;
-  document.getElementById('registerBtn').textContent = 'Creating account...';
-  
-  const { data, error } = await supabase.auth.signUp({
-    email, password,
-    options: { data: { full_name: name } }
-  });
-  
-  document.getElementById('registerBtn').disabled = false;
-  document.getElementById('registerBtn').textContent = 'Create Account';
-  
-  if (error) { showMsg('registerMsg', error.message, 'error'); return; }
 
-  if (data.session) {
-    await initApp(data.session.user);
-  } else if (data.user) {
-    showMsg('registerMsg', 'Account created! Check your email to confirm, then sign in.', 'success');
-    setTimeout(() => showAuth('login'), 3000);
-  } else {
-    showMsg('registerMsg', 'Something went wrong. Please try again.', 'error');
+  const btn = document.getElementById('registerBtn');
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+
+  const timeout = setTimeout(() => {
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+    showMsg('registerMsg', 'Request timed out. Check your internet connection and try again.', 'error');
+  }, 10000);
+
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { full_name: name } }
+    });
+
+    clearTimeout(timeout);
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+
+    if (error) { showMsg('registerMsg', error.message, 'error'); return; }
+
+    if (data.session) {
+      await initApp(data.session.user);
+    } else if (data.user) {
+      showMsg('registerMsg', 'Account created! Check your email to confirm, then sign in.', 'success');
+      setTimeout(() => showAuth('login'), 3000);
+    } else {
+      showMsg('registerMsg', 'Something went wrong. Please try again.', 'error');
+    }
+  } catch(e) {
+    clearTimeout(timeout);
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+    showMsg('registerMsg', 'Error: ' + e.message, 'error');
   }
 }
 
