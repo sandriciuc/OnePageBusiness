@@ -50,7 +50,15 @@ CREATE TABLE IF NOT EXISTS strategies (
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE strategies ENABLE ROW LEVEL SECURITY;
 
--- 4. Profiles policies
+-- 4. Helper function to check admin (avoids infinite recursion in RLS)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'
+  );
+$$ LANGUAGE sql SECURITY DEFINER;
+
+-- Profiles policies
 DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
@@ -64,11 +72,7 @@ CREATE POLICY "Users can update own profile"
 DROP POLICY IF EXISTS "Admin can view all profiles" ON profiles;
 CREATE POLICY "Admin can view all profiles"
   ON profiles FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 DROP POLICY IF EXISTS "Allow insert on signup" ON profiles;
 CREATE POLICY "Allow insert on signup"
@@ -94,20 +98,12 @@ CREATE POLICY "Users can update own strategy"
 DROP POLICY IF EXISTS "Admin can view all strategies" ON strategies;
 CREATE POLICY "Admin can view all strategies"
   ON strategies FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 DROP POLICY IF EXISTS "Admin can update all strategies" ON strategies;
 CREATE POLICY "Admin can update all strategies"
   ON strategies FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'
-    )
-  );
+  USING (public.is_admin());
 
 -- 6. Auto-create profile on signup
 CREATE OR REPLACE FUNCTION public.handle_new_user()
