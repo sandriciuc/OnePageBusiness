@@ -417,11 +417,14 @@ async function handleRegister() {
   document.getElementById('registerBtn').textContent = 'Create Account';
   
   if (error) { showMsg('registerMsg', error.message, 'error'); return; }
-  
-  if (data.user) {
-    await initApp(data.user);
+
+  if (data.session) {
+    await initApp(data.session.user);
+  } else if (data.user) {
+    showMsg('registerMsg', 'Account created! Check your email to confirm, then sign in.', 'success');
+    setTimeout(() => showAuth('login'), 3000);
   } else {
-    showMsg('registerMsg', 'Check your email to confirm your account, then sign in.', 'success');
+    showMsg('registerMsg', 'Something went wrong. Please try again.', 'error');
   }
 }
 
