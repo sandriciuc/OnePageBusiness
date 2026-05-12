@@ -1,0 +1,9 @@
+{
+  "name": "one-page-business",
+  "version": "1.0.0",
+  "description": "One Page Business — Strategic clarity system for entrepreneurs",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve ."
+  }
+}

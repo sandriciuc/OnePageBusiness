@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Page Business — Clarity · Systems · Results</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --cream:#F5F2EE;--cream-dark:#E8E3DB;--green:#3D5A4C;--green-light:#4E6E5D;
+  --amber:#C4873A;--bronze:#B89A6E;--brown:#A0522D;--ink:#1C1C1E;
+  --ink-soft:#444;--ink-mute:#888;--white:#fff;--red:#C0392B;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);font-size:14px;line-height:1.6;min-height:100vh;}
+::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-thumb{background:var(--cream-dark);border-radius:3px;}
+
+/* ═══ LOADING ═══ */
+.loading-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:12px;}
+.loading-screen h1{font-family:'Playfair Display',serif;font-size:24px;color:var(--green);font-weight:400;}
+.loading-spinner{width:28px;height:28px;border:2px solid var(--cream-dark);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ═══ AUTH ═══ */
+.auth-container{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.auth-container.active{display:flex;}
+.auth-card{background:var(--white);border-radius:16px;padding:44px 38px;width:100%;max-width:420px;box-shadow:0 8px 40px rgba(0,0,0,0.06);}
+.auth-logo{text-align:center;margin-bottom:28px;}
+.auth-logo h1{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;color:var(--green);margin-bottom:4px;}
+.auth-logo .tagline{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);}
+.auth-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--ink);margin-bottom:24px;text-align:center;}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:12px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;}
+.form-input{width:100%;padding:12px 14px;border:1px solid var(--cream-dark);border-radius:8px;background:var(--cream);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);outline:none;transition:border-color 0.2s;}
+.form-input:focus{border-color:var(--green);background:var(--white);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:all 0.2s;width:100%;}
+.btn-primary{background:var(--green);color:var(--cream);}
+.btn-primary:hover{background:var(--green-light);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-sm{padding:7px 14px;font-size:12px;width:auto;}
+.auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--ink-mute);}
+.auth-switch a{color:var(--green);text-decoration:none;font-weight:500;cursor:pointer;}
+.auth-switch a:hover{text-decoration:underline;}
+.auth-msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+.auth-msg.error{background:rgba(192,57,43,0.08);color:var(--red);display:block;}
+.auth-msg.success{background:rgba(61,90,76,0.08);color:var(--green);display:block;}
+
+/* ═══ APP ═══ */
+.app{display:none;}
+.app.active{display:block;}
+
+.header{background:var(--green);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:8px;}
+.header-left h1{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--cream);letter-spacing:0.02em;}
+.header-sub{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-top:2px;}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.header-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid rgba(245,242,238,0.25);border-radius:6px;background:transparent;color:rgba(245,242,238,0.7);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.header-btn:hover{background:rgba(245,242,238,0.1);color:var(--cream);}
+.header-btn-amber{background:var(--amber);border-color:var(--amber);color:var(--white);}
+.header-btn-amber:hover{background:#D4943F;border-color:#D4943F;}
+.save-status{font-size:10px;color:rgba(245,242,238,0.4);transition:color 0.3s;}
+.save-status.saving{color:var(--amber);}
+.user-info{font-size:10px;color:rgba(245,242,238,0.45);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* ═══ NAV ═══ */
+.nav{display:flex;background:var(--white);border-bottom:1px solid var(--cream-dark);position:sticky;top:54px;z-index:49;overflow-x:auto;}
+.nav-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:13px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:#999;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:400;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;}
+.nav-btn:hover{color:var(--ink-soft);}
+.nav-btn.active{color:var(--green);font-weight:600;border-bottom-color:var(--green);}
+.nav-btn svg{width:15px;height:15px;}
+
+.main{max-width:920px;margin:0 auto;padding:28px 20px 60px;}
+
+/* ═══ SECTIONS ═══ */
+.section-header{margin-bottom:20px;margin-top:8px;}
+.section-layer{font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:6px;}
+.section-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:400;color:var(--ink);margin-bottom:4px;}
+.section-sub{font-size:13px;color:var(--ink-mute);font-weight:300;}
+
+/* ═══ FIELD CARDS ═══ */
+.field-card{background:var(--white);border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:border-color 0.2s;margin-bottom:10px;}
+.field-card.filled{border-color:rgba(61,90,76,0.15);}
+.field-header{width:100%;display:flex;align-items:center;gap:12px;padding:16px 20px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:left;}
+.field-icon{display:flex;color:#999;}
+.field-card.filled .field-icon{color:var(--green);}
+.field-label{flex:1;font-size:14px;font-weight:500;color:#666;}
+.field-card.filled .field-label{color:var(--ink);}
+.field-check{color:var(--green);display:none;}
+.field-card.filled .field-check{display:flex;}
+.field-arrow{color:#999;display:flex;transition:transform 0.2s;}
+.field-card.expanded .field-arrow{transform:rotate(90deg);}
+.field-body{display:none;padding:0 20px 16px;}
+.field-card.expanded .field-body{display:block;}
+.text-area{width:100%;padding:12px 14px;border:1px solid var(--cream-dark);border-radius:8px;background:var(--white);font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink);line-height:1.6;resize:vertical;outline:none;transition:border-color 0.2s;}
+.text-area:focus{border-color:var(--green);}
+
+/* ═══ KPI ═══ */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.kpi-card{background:var(--white);border-radius:12px;padding:20px 22px;border:1px solid rgba(61,90,76,0.08);display:flex;flex-direction:column;gap:12px;}
+.kpi-header{display:flex;justify-content:space-between;align-items:center;}
+.kpi-label{font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);font-weight:500;}
+.kpi-inputs{display:flex;gap:12px;align-items:center;}
+.kpi-input-group{flex:1;}
+.kpi-input-label{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:2px;}
+.kpi-input{width:100%;padding:6px 0;border:none;border-bottom:1px solid var(--cream-dark);background:transparent;font-size:20px;font-family:'Playfair Display',serif;color:var(--ink);outline:none;}
+.kpi-input:focus{border-bottom-color:var(--green);}
+.kpi-divider{color:#ccc;font-size:18px;padding-top:14px;}
+.progress-bar{height:6px;background:rgba(61,90,76,0.1);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:3px;transition:width 0.4s ease;}
+.progress-pct{font-size:11px;color:#999;margin-top:4px;text-align:right;}
+
+.status-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;border:none;color:var(--cream);font-size:10px;font-family:'DM Sans',sans-serif;font-weight:500;letter-spacing:0.04em;cursor:pointer;text-transform:uppercase;position:relative;}
+.status-dropdown{display:none;position:absolute;top:calc(100% + 4px);right:0;background:var(--white);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.12);z-index:100;overflow:hidden;min-width:130px;}
+.status-dropdown.open{display:block;}
+.status-option{display:flex;align-items:center;gap:8px;width:100%;padding:8px 14px;border:none;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;}
+.status-option:hover{background:var(--cream);}
+.status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* ═══ DASHBOARD ═══ */
+.completion-bar-wrap{margin-bottom:32px;}
+.completion-header{display:flex;justify-content:space-between;margin-bottom:8px;}
+.completion-label{font-size:12px;color:var(--ink-mute);font-weight:500;}
+.completion-pct-text{font-size:12px;color:var(--green);font-weight:600;}
+.completion-track{height:8px;background:rgba(61,90,76,0.1);border-radius:4px;}
+.completion-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--green-light));border-radius:4px;transition:width 0.6s ease;}
+.kpi-summary{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap;}
+.kpi-summary-card{flex:1 1 100px;color:var(--cream);border-radius:10px;padding:14px 18px;text-align:center;}
+.kpi-summary-num{font-family:'Playfair Display',serif;font-size:28px;}
+.kpi-summary-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.8;}
+.strategy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:28px;}
+.summary-card{background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid rgba(61,90,76,0.08);}
+.summary-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px;}
+.summary-value{font-family:'Playfair Display',serif;font-size:14px;color:var(--ink);line-height:1.5;white-space:pre-wrap;max-height:80px;overflow:hidden;}
+.summary-empty{color:#ccc;font-family:'DM Sans',sans-serif;font-style:italic;font-size:13px;}
+.dash-section-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:12px;}
+.dash-kpi-card{background:var(--white);border-radius:10px;padding:16px 18px;border:1px solid rgba(61,90,76,0.08);}
+.dash-kpi-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.dash-kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-mute);}
+.dash-kpi-status{font-size:10px;padding:2px 8px;border-radius:10px;color:var(--cream);text-transform:uppercase;letter-spacing:0.04em;}
+.dash-kpi-value{font-family:'Playfair Display',serif;font-size:22px;color:var(--ink);}
+.dash-kpi-target{font-size:13px;color:#999;font-family:'DM Sans',sans-serif;}
+.dash-kpi-bar{height:4px;background:rgba(61,90,76,0.1);border-radius:2px;margin-top:8px;}
+.dash-kpi-bar-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+
+/* ═══ ADMIN ═══ */
+.admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.admin-title{font-family:'Playfair Display',serif;font-size:24px;font-weight:400;color:var(--ink);}
+.admin-count{font-size:13px;color:var(--ink-mute);}
+.client-list{display:flex;flex-direction:column;gap:10px;}
+.client-card{background:var(--white);border-radius:12px;padding:20px 24px;border:1px solid rgba(61,90,76,0.08);display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;transition:all 0.2s;}
+.client-card:hover{border-color:rgba(61,90,76,0.2);box-shadow:0 2px 12px rgba(0,0,0,0.04);}
+.client-info h3{font-family:'Playfair Display',serif;font-size:16px;font-weight:400;color:var(--ink);margin-bottom:2px;}
+.client-info p{font-size:12px;color:var(--ink-mute);}
+.client-meta{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.client-progress{text-align:right;}
+.client-progress .pct{font-family:'Playfair Display',serif;font-size:18px;color:var(--green);}
+.client-progress .lbl{font-size:10px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.06em;}
+.client-statuses{display:flex;gap:4px;}
+.mini-dot{width:8px;height:8px;border-radius:50%;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--cream-dark);border-radius:6px;background:transparent;color:var(--ink-mute);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;margin-bottom:20px;transition:all 0.2s;}
+.back-btn:hover{border-color:var(--green);color:var(--green);}
+
+.footer{text-align:center;padding:20px;font-size:11px;color:#999;letter-spacing:0.06em;border-top:1px solid var(--cream-dark);}
+.view-section{display:none;}.view-section.active{display:block;}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.animate-in{animation:fadeIn 0.3s ease forwards;}
+
+@media(max-width:600px){
+  .header{padding:12px 16px;}.header-left h1{font-size:17px;}.main{padding:20px 14px 50px;}
+  .strategy-grid,.kpi-grid{grid-template-columns:1fr;}.kpi-summary-card{flex:1 1 80px;padding:10px 12px;}
+  .kpi-summary-num{font-size:22px;}.auth-card{padding:32px 24px;}.header-btn{font-size:10px;padding:5px 10px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADING ═══ -->
+<div id="loadingScreen" class="loading-screen">
+  <h1>One Page Business</h1>
+  <div class="loading-spinner"></div>
+</div>
+
+<!-- ═══ AUTH: LOGIN ═══ -->
+<div id="authLogin" class="auth-container">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>One Page Business</h1>
+      <div class="tagline">Clarity · Systems · Results</div>
+    </div>
+    <h2 class="auth-title">Welcome back</h2>
+    <div id="loginMsg" class="auth-msg"></div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" id="loginEmail" class="form-input" placeholder="you@example.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" id="loginPassword" class="form-input" placeholder="Your password">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" onclick="handleLogin()">Sign In</button>
+    <div class="auth-switch">
+      Don't have an account? <a onclick="showAuth('register')">Create one</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ AUTH: REGISTER ═══ -->
+<div id="authRegister" class="auth-container">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>One Page Business</h1>
+      <div class="tagline">Clarity · Systems · Results</div>
+    </div>
+    <h2 class="auth-title">Create your account</h2>
+    <div id="registerMsg" class="auth-msg"></div>
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input type="text" id="registerName" class="form-input" placeholder="Your full name">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" id="registerEmail" class="form-input" placeholder="you@example.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input type="password" id="registerPassword" class="form-input" placeholder="Min. 6 characters">
+    </div>
+    <button class="btn btn-primary" id="registerBtn" onclick="handleRegister()">Create Account</button>
+    <div class="auth-switch">
+      Already have an account? <a onclick="showAuth('login')">Sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="app" class="app">
+  <header class="header">
+    <div class="header-left">
+      <h1>One Page Business</h1>
+      <div class="header-sub">Clarity · Systems · Results</div>
+    </div>
+    <div class="header-right">
+      <span id="saveStatus" class="save-status">All saved</span>
+      <span id="userInfo" class="user-info"></span>
+      <button class="header-btn" onclick="handleLogout()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </header>
+
+  <nav class="nav" id="nav"></nav>
+
+  <main class="main">
+    <div id="view-dashboard" class="view-section active"></div>
+    <div id="view-foundation" class="view-section"></div>
+    <div id="view-execution" class="view-section"></div>
+    <div id="view-kpis" class="view-section"></div>
+    <div id="view-admin" class="view-section"></div>
+    <div id="view-admin-client" class="view-section"></div>
+  </main>
+
+  <footer class="footer">ONE PAGE BUSINESS · Clarity · Systems · Results</footer>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// SUPABASE INIT
+// ═══════════════════════════════════════
+const SUPABASE_URL = 'https://bxvsvqzpxasbbkxdllna.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4dnN2cXpweGFzYmJreGRsbG5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTc1ODUsImV4cCI6MjA5NDE3MzU4NX0.zfDRLXlckYv0KF4EiKEz_s01Oye9Ur6ISvJGBzbQxZI';
+
+let sb;
+try {
+  if (window.supabase && window.supabase.createClient) {
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } else {
+    console.error('Supabase library not loaded');
+    document.getElementById('loadingScreen').innerHTML = '<h1 style="font-family:Playfair Display,serif;font-size:24px;color:#3D5A4C;">One Page Business</h1><p style="color:#888;margin-top:12px;">Could not load. Please check your internet connection and refresh.</p>';
+  }
+} catch(e) {
+  console.error('Supabase init error:', e);
+}
+const supabase = sb;
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let currentUser = null;
+let currentProfile = null;
+let strategyData = null;
+let strategyId = null;
+let saveTimer = null;
+let currentView = 'dashboard';
+let adminViewingClient = null;
+
+const statusMap = {
+  'on-track': { bg: '#3D5A4C', label: 'On Track' },
+  'at-risk': { bg: '#C4873A', label: 'At Risk' },
+  'off-track': { bg: '#A0522D', label: 'Off Track' },
+};
+
+const defaultKpis = {
+  revenue:{current:'',target:'',status:'on-track'},
+  leads:{current:'',target:'',status:'on-track'},
+  calls:{current:'',target:'',status:'on-track'},
+  conversionRate:{current:'',target:'',status:'on-track'},
+  cac:{current:'',target:'',status:'on-track'},
+  emailGrowth:{current:'',target:'',status:'on-track'},
+};
+
+const icons = {
+  eye:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+  compass:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+  target:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  users:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  dollar:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  megaphone:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  filter:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
+  zap:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
+  calendar:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  activity:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+  settings:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+  check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  chevRight:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+  chevDown:'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+};
+
+const foundationFields = [
+  {key:'vision',col:'vision',title:'Vision',icon:'eye',ph:'Where is your business going? What does success look like in 3-5 years?',rows:3},
+  {key:'goals',col:'goals',title:'Goals',icon:'target',ph:'Your core business goals — what are you building toward this year?',rows:3},
+  {key:'offers',col:'offers',title:'Offers',icon:'dollar',ph:'What do you sell? List your services, products, or programs.',rows:3},
+  {key:'idealClient',col:'ideal_client',title:'Ideal Client',icon:'users',ph:'Who is your ideal client? Demographics, psychographics, pain points.',rows:3},
+  {key:'pricing',col:'pricing',title:'Pricing',icon:'dollar',ph:'Your pricing structure — what does each offer cost?',rows:2},
+  {key:'positioning',col:'positioning',title:'Positioning',icon:'compass',ph:'How are you different? What makes your approach unique?',rows:3},
+  {key:'messaging',col:'messaging',title:'Core Messaging',icon:'megaphone',ph:'Your key messages — what do you want people to remember about you?',rows:3},
+  {key:'funnelArchitecture',col:'funnel_architecture',title:'Funnel Architecture',icon:'filter',ph:'How do people find you, engage, and buy? Describe your funnel flow.',rows:3},
+  {key:'revenueStreams',col:'revenue_streams',title:'Revenue Streams',icon:'dollar',ph:'Where does your revenue come from? List all income streams.',rows:2},
+  {key:'team',col:'team',title:'Team',icon:'users',ph:'Who helps you? Team members, contractors, roles.',rows:2},
+  {key:'systems',col:'systems',title:'Systems',icon:'settings',ph:'What tools and systems run your business? (CRM, email, scheduling, etc.)',rows:2},
+];
+
+const executionFields = [
+  {key:'quarterlyGoals',col:'quarterly_goals',title:'Quarterly Goals',icon:'target',ph:'What are your top 3 goals for this quarter?',rows:4},
+  {key:'weeklyActions',col:'weekly_actions',title:'Weekly Actions',icon:'calendar',ph:'What are your key actions this week?',rows:4},
+  {key:'campaigns',col:'campaigns',title:'Campaigns',icon:'zap',ph:'Active or planned campaigns — launches, promotions, partnerships.',rows:3},
+  {key:'contentPlan',col:'content_plan',title:'Content Plan',icon:'megaphone',ph:'Your content strategy — what are you creating, where, and how often?',rows:3},
+  {key:'leadGeneration',col:'lead_generation',title:'Lead Generation',icon:'users',ph:'How are you generating leads? Organic, paid, referrals, partnerships?',rows:3},
+  {key:'salesPipeline',col:'sales_pipeline',title:'Sales Pipeline',icon:'activity',ph:'Current prospects, conversations in progress, follow-ups needed.',rows:3},
+];
+
+const kpiDefs = [
+  {key:'revenue',label:'Revenue'},{key:'leads',label:'Leads'},{key:'calls',label:'Calls Booked'},
+  {key:'conversionRate',label:'Conversion Rate %'},{key:'cac',label:'Customer Acq. Cost'},{key:'emailGrowth',label:'Email List Growth'},
+];
+
+const allTextFields = [...foundationFields, ...executionFields, {key:'financialTarget',col:'financial_target'}];
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+function showAuth(screen) {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('authLogin').className = 'auth-container' + (screen === 'login' ? ' active' : '');
+  document.getElementById('authRegister').className = 'auth-container' + (screen === 'register' ? ' active' : '');
+  document.getElementById('app').className = 'app';
+}
+
+function showApp() {
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('authLogin').className = 'auth-container';
+  document.getElementById('authRegister').className = 'auth-container';
+  document.getElementById('app').className = 'app active';
+}
+
+function showMsg(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = 'auth-msg ' + type;
+}
+
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) { showMsg('loginMsg','Please fill in all fields','error'); return; }
+  
+  document.getElementById('loginBtn').disabled = true;
+  document.getElementById('loginBtn').textContent = 'Signing in...';
+  
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  
+  document.getElementById('loginBtn').disabled = false;
+  document.getElementById('loginBtn').textContent = 'Sign In';
+  
+  if (error) { showMsg('loginMsg', error.message, 'error'); return; }
+  await initApp(data.user);
+}
+
+async function handleRegister() {
+  const name = document.getElementById('registerName').value.trim();
+  const email = document.getElementById('registerEmail').value.trim();
+  const password = document.getElementById('registerPassword').value;
+  if (!name || !email || !password) { showMsg('registerMsg','Please fill in all fields','error'); return; }
+  if (password.length < 6) { showMsg('registerMsg','Password must be at least 6 characters','error'); return; }
+  
+  document.getElementById('registerBtn').disabled = true;
+  document.getElementById('registerBtn').textContent = 'Creating account...';
+  
+  const { data, error } = await supabase.auth.signUp({
+    email, password,
+    options: { data: { full_name: name } }
+  });
+  
+  document.getElementById('registerBtn').disabled = false;
+  document.getElementById('registerBtn').textContent = 'Create Account';
+  
+  if (error) { showMsg('registerMsg', error.message, 'error'); return; }
+  
+  if (data.user) {
+    await initApp(data.user);
+  } else {
+    showMsg('registerMsg', 'Check your email to confirm your account, then sign in.', 'success');
+  }
+}
+
+async function handleLogout() {
+  await supabase.auth.signOut();
+  currentUser = null; currentProfile = null; strategyData = null;
+  showAuth('login');
+}
+
+// ═══════════════════════════════════════
+// APP INIT
+// ═══════════════════════════════════════
+async function initApp(user) {
+  try {
+    currentUser = user;
+    
+    // Get profile
+    const { data: profile, error: profileErr } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (profileErr) { console.error('Profile error:', profileErr); }
+    currentProfile = profile;
+    
+    // Load strategy
+    const { data: strat, error: stratErr } = await supabase.from('strategies').select('*').eq('user_id', user.id).single();
+    if (stratErr) { console.error('Strategy error:', stratErr); }
+    if (strat) {
+      strategyData = strat;
+      strategyId = strat.id;
+      if (typeof strat.kpis === 'string') strat.kpis = JSON.parse(strat.kpis);
+      strategyData.kpis = { ...defaultKpis, ...strat.kpis };
+    } else {
+      // Create default strategy data for display
+      strategyData = { kpis: {...defaultKpis} };
+      allTextFields.forEach(f => { if (f.col) strategyData[f.col] = ''; });
+    }
+    
+    document.getElementById('userInfo').textContent = profile?.full_name || user.email;
+    
+    buildNav();
+    showApp();
+    switchView('dashboard');
+  } catch(e) {
+    console.error('initApp error:', e);
+    showApp();
+    switchView('dashboard');
+  }
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
+function buildNav() {
+  const nav = document.getElementById('nav');
+  const isAdmin = currentProfile?.role === 'admin';
+  
+  let html = `
+    <button class="nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      One Page
+    </button>
+    <button class="nav-btn" data-view="foundation" onclick="switchView('foundation')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      Clarity
+    </button>
+    <button class="nav-btn" data-view="execution" onclick="switchView('execution')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      Execution
+    </button>
+    <button class="nav-btn" data-view="kpis" onclick="switchView('kpis')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Tracking
+    </button>
+  `;
+  
+  if (isAdmin) {
+    html += `
+      <button class="nav-btn" data-view="admin" onclick="switchView('admin')" style="border-left:1px solid var(--cream-dark);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Clients
+      </button>
+    `;
+  }
+  
+  nav.innerHTML = html;
+}
+
+function switchView(viewId) {
+  currentView = viewId;
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === viewId);
+  });
+  document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('view-' + viewId).classList.add('active');
+  
+  if (viewId === 'dashboard') renderDashboard();
+  else if (viewId === 'foundation') renderFoundation();
+  else if (viewId === 'execution') renderExecution();
+  else if (viewId === 'kpis') renderKPIs();
+  else if (viewId === 'admin') renderAdmin();
+}
+
+// ═══════════════════════════════════════
+// SAVE TO SUPABASE
+// ═══════════════════════════════════════
+function triggerSave() {
+  const el = document.getElementById('saveStatus');
+  el.textContent = 'Saving...';
+  el.className = 'save-status saving';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const updateObj = {};
+    allTextFields.forEach(f => {
+      if (f.col && strategyData[f.col] !== undefined) {
+        updateObj[f.col] = strategyData[f.col];
+      }
+    });
+    updateObj.kpis = strategyData.kpis;
+    
+    await supabase.from('strategies').update(updateObj).eq('id', strategyId);
+    
+    el.textContent = 'All saved';
+    el.className = 'save-status';
+  }, 800);
+}
+
+function updateField(col, value, el) {
+  strategyData[col] = value;
+  const card = el.closest('.field-card');
+  if (value.trim()) card.classList.add('filled'); else card.classList.remove('filled');
+  triggerSave();
+}
+
+function updateKPI(kpiKey, field, value) {
+  if (!strategyData.kpis) strategyData.kpis = {...defaultKpis};
+  strategyData.kpis[kpiKey][field] = value;
+  
+  const d = strategyData.kpis[kpiKey];
+  const pct = d.target && d.current ? Math.min(100, Math.round((parseFloat(d.current)/parseFloat(d.target))*100)) : 0;
+  const card = document.querySelector(`[data-kpi-key="${kpiKey}"]`);
+  if (card) {
+    const fill = card.querySelector('.progress-fill');
+    const pctEl = card.querySelector('.progress-pct');
+    if (fill) fill.style.width = pct + '%';
+    if (pctEl) pctEl.textContent = pct + '%';
+  }
+  triggerSave();
+}
+
+function toggleField(btn) { btn.closest('.field-card').classList.toggle('expanded'); }
+
+function toggleStatus(btn, kpiKey) {
+  document.querySelectorAll('.status-dropdown.open').forEach(dd => {
+    if (dd.id !== 'dd-'+kpiKey) dd.classList.remove('open');
+  });
+  document.getElementById('dd-'+kpiKey).classList.toggle('open');
+}
+
+function setStatus(kpiKey, status) {
+  strategyData.kpis[kpiKey].status = status;
+  document.getElementById('dd-'+kpiKey).classList.remove('open');
+  triggerSave();
+  renderKPIs();
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.status-badge') && !e.target.closest('.status-dropdown')) {
+    document.querySelectorAll('.status-dropdown.open').forEach(dd => dd.classList.remove('open'));
+  }
+});
+
+// ═══════════════════════════════════════
+// RENDER FOUNDATION
+// ═══════════════════════════════════════
+function renderFoundation() {
+  const c = document.getElementById('view-foundation');
+  let html = `<div class="section-header"><div class="section-layer">Layer 01</div><h2 class="section-title">Strategic Foundation</h2><p class="section-sub">Your business blueprint — the clarity layer. Define what you're building and for whom.</p></div>`;
+  foundationFields.forEach(f => {
+    const val = strategyData?.[f.col] || '';
+    const filled = !!val.trim();
+    html += `<div class="field-card${filled?' filled':''}${filled?' expanded':''}">
+      <button class="field-header" onclick="toggleField(this)">
+        <span class="field-icon">${icons[f.icon]}</span>
+        <span class="field-label">${f.title}</span>
+        <span class="field-check">${icons.check}</span>
+        <span class="field-arrow">${icons.chevRight}</span>
+      </button>
+      <div class="field-body">
+        <textarea class="text-area" rows="${f.rows}" placeholder="${f.ph}" oninput="updateField('${f.col}',this.value,this)">${val}</textarea>
+      </div>
+    </div>`;
+  });
+  c.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// RENDER EXECUTION
+// ═══════════════════════════════════════
+function renderExecution() {
+  const c = document.getElementById('view-execution');
+  let html = `<div class="section-header"><div class="section-layer">Layer 02</div><h2 class="section-title">Execution System</h2><p class="section-sub">Your action layer — what you're doing this quarter, this week, right now.</p></div>`;
+  executionFields.forEach(f => {
+    const val = strategyData?.[f.col] || '';
+    const filled = !!val.trim();
+    html += `<div class="field-card${filled?' filled':''}${filled?' expanded':''}">
+      <button class="field-header" onclick="toggleField(this)">
+        <span class="field-icon">${icons[f.icon]}</span>
+        <span class="field-label">${f.title}</span>
+        <span class="field-check">${icons.check}</span>
+        <span class="field-arrow">${icons.chevRight}</span>
+      </button>
+      <div class="field-body">
+        <textarea class="text-area" rows="${f.rows}" placeholder="${f.ph}" oninput="updateField('${f.col}',this.value,this)">${val}</textarea>
+      </div>
+    </div>`;
+  });
+  c.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// RENDER KPIs
+// ═══════════════════════════════════════
+function renderKPIs() {
+  const c = document.getElementById('view-kpis');
+  const ft = strategyData?.financial_target || '';
+  const ftFilled = !!ft.trim();
+  const kpis = strategyData?.kpis || defaultKpis;
+  
+  let html = `<div class="section-header"><div class="section-layer">Layer 03</div><h2 class="section-title">KPI Dashboard</h2><p class="section-sub">Your tracking layer — the numbers that tell you if your strategy is working.</p></div>`;
+  
+  html += `<div class="field-card${ftFilled?' filled':''}${ftFilled?' expanded':''}" style="margin-bottom:24px;">
+    <button class="field-header" onclick="toggleField(this)">
+      <span class="field-icon">${icons.dollar}</span>
+      <span class="field-label">Financial Target</span>
+      <span class="field-check">${icons.check}</span>
+      <span class="field-arrow">${icons.chevRight}</span>
+    </button>
+    <div class="field-body">
+      <textarea class="text-area" rows="2" placeholder="Your revenue / profit target (e.g. €15,000/month by December)" oninput="updateField('financial_target',this.value,this)">${ft}</textarea>
+    </div>
+  </div>`;
+  
+  html += '<div class="kpi-grid">';
+  kpiDefs.forEach(kpi => {
+    const d = kpis[kpi.key] || {current:'',target:'',status:'on-track'};
+    const pct = d.target && d.current ? Math.min(100,Math.round((parseFloat(d.current)/parseFloat(d.target))*100)) : 0;
+    const s = statusMap[d.status];
+    html += `<div class="kpi-card" data-kpi-key="${kpi.key}">
+      <div class="kpi-header">
+        <span class="kpi-label">${kpi.label}</span>
+        <div style="position:relative;">
+          <button class="status-badge" style="background:${s.bg};" onclick="toggleStatus(this,'${kpi.key}')">${s.label} ${icons.chevDown}</button>
+          <div class="status-dropdown" id="dd-${kpi.key}">
+            ${Object.entries(statusMap).map(([k,v])=>`<button class="status-option" onclick="setStatus('${kpi.key}','${k}')"><span class="status-dot" style="background:${v.bg};"></span>${v.label}</button>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="kpi-inputs">
+        <div class="kpi-input-group"><label class="kpi-input-label">Current</label><input class="kpi-input" value="${d.current}" placeholder="0" oninput="updateKPI('${kpi.key}','current',this.value)"></div>
+        <div class="kpi-divider">/</div>
+        <div class="kpi-input-group"><label class="kpi-input-label">Target</label><input class="kpi-input" value="${d.target}" placeholder="0" oninput="updateKPI('${kpi.key}','target',this.value)"></div>
+      </div>
+      <div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${s.bg};"></div></div><div class="progress-pct">${pct}%</div></div>
+    </div>`;
+  });
+  html += '</div>';
+  c.innerHTML = html;
+}
+
+// ═══════════════════════════════════════
+// RENDER DASHBOARD
+// ═══════════════════════════════════════
+function renderDashboard() {
+  const c = document.getElementById('view-dashboard');
+  if (!strategyData) { c.innerHTML = '<p style="color:#999;">Loading your strategy...</p>'; return; }
+  
+  const cols = allTextFields.filter(f=>f.col).map(f=>f.col);
+  const filled = cols.filter(col => strategyData[col]?.trim()).length;
+  const pct = Math.round((filled/cols.length)*100);
+  const kpis = strategyData.kpis || defaultKpis;
+  const entries = Object.entries(kpis);
+  const onTrack = entries.filter(([,v])=>v.status==='on-track').length;
+  const atRisk = entries.filter(([,v])=>v.status==='at-risk').length;
+  const offTrack = entries.filter(([,v])=>v.status==='off-track').length;
+  
+  const sc = (label,col) => {
+    const val = strategyData[col]||'';
+    return `<div class="summary-card"><div class="summary-label">${label}</div><div class="summary-value">${val.trim()?val:'<span class="summary-empty">Not defined yet</span>'}</div></div>`;
+  };
+  
+  const kpiLabels = {revenue:'Revenue',leads:'Leads',calls:'Calls',conversionRate:'Conversion Rate',cac:'CAC',emailGrowth:'Email Growth'};
+  
+  c.innerHTML = `
+    <div class="completion-bar-wrap animate-in">
+      <div class="completion-header"><span class="completion-label">Strategy Completion</span><span class="completion-pct-text">${pct}%</span></div>
+      <div class="completion-track"><div class="completion-fill" style="width:${pct}%;"></div></div>
+    </div>
+    <div class="kpi-summary animate-in" style="animation-delay:0.05s;">
+      <div class="kpi-summary-card" style="background:#3D5A4C;"><div class="kpi-summary-num">${onTrack}</div><div class="kpi-summary-label">On Track</div></div>
+      <div class="kpi-summary-card" style="background:#C4873A;"><div class="kpi-summary-num">${atRisk}</div><div class="kpi-summary-label">At Risk</div></div>
+      <div class="kpi-summary-card" style="background:#A0522D;"><div class="kpi-summary-num">${offTrack}</div><div class="kpi-summary-label">Off Track</div></div>
+    </div>
+    <div class="strategy-grid animate-in" style="animation-delay:0.1s;">
+      ${sc('Vision','vision')}${sc('Goals','goals')}${sc('Offers','offers')}${sc('Ideal Client','ideal_client')}
+      ${sc('Pricing','pricing')}${sc('Positioning','positioning')}${sc('Revenue Streams','revenue_streams')}${sc('Financial Target','financial_target')}
+    </div>
+    <div class="animate-in" style="animation-delay:0.15s;margin-bottom:16px;">
+      <div class="dash-section-label">Current Focus</div>
+      <div class="strategy-grid">
+        ${sc('Quarterly Goals','quarterly_goals')}${sc('Weekly Actions','weekly_actions')}${sc('Lead Generation','lead_generation')}${sc('Sales Pipeline','sales_pipeline')}
+      </div>
+    </div>
+    <div class="animate-in" style="animation-delay:0.2s;">
+      <div class="dash-section-label">Key Metrics</div>
+      <div class="strategy-grid">
+        ${entries.map(([key,val])=>{
+          const kpct = val.target&&val.current?Math.min(100,Math.round((parseFloat(val.current)/parseFloat(val.target))*100)):0;
+          const s = statusMap[val.status];
+          return `<div class="dash-kpi-card"><div class="dash-kpi-header"><span class="dash-kpi-label">${kpiLabels[key]||key}</span><span class="dash-kpi-status" style="background:${s.bg};">${s.label}</span></div><div class="dash-kpi-value">${val.current||'—'} <span class="dash-kpi-target">/ ${val.target||'—'}</span></div><div class="dash-kpi-bar"><div class="dash-kpi-bar-fill" style="width:${kpct}%;background:${s.bg};"></div></div></div>`;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════
+async function renderAdmin() {
+  const c = document.getElementById('view-admin');
+  c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+  
+  const { data: profiles } = await supabase.from('profiles').select('*').order('created_at',{ascending:false});
+  const { data: strategies } = await supabase.from('strategies').select('*');
+  
+  const stratMap = {};
+  (strategies||[]).forEach(s => { stratMap[s.user_id] = s; });
+  
+  const clients = (profiles||[]).filter(p => p.id !== currentUser.id);
+  
+  let html = `
+    <div class="admin-header">
+      <div>
+        <h2 class="admin-title">Your Clients</h2>
+        <div class="admin-count">${clients.length} client${clients.length!==1?'s':''}</div>
+      </div>
+    </div>
+    <div class="client-list">
+  `;
+  
+  if (clients.length === 0) {
+    html += '<div style="text-align:center;padding:40px;color:var(--ink-mute);">No clients yet. When they register, they\'ll appear here.</div>';
+  }
+  
+  clients.forEach(p => {
+    const s = stratMap[p.id];
+    const cols = allTextFields.filter(f=>f.col).map(f=>f.col);
+    const filled = s ? cols.filter(col => s[col]?.trim()).length : 0;
+    const pct = Math.round((filled/cols.length)*100);
+    const kpis = s?.kpis ? (typeof s.kpis === 'string' ? JSON.parse(s.kpis) : s.kpis) : defaultKpis;
+    const entries = Object.entries(kpis);
+    
+    html += `
+      <div class="client-card" onclick="viewClient('${p.id}')">
+        <div class="client-info">
+          <h3>${p.full_name || 'Unnamed'}</h3>
+          <p>${p.email} · Joined ${new Date(p.created_at).toLocaleDateString()}</p>
+        </div>
+        <div class="client-meta">
+          <div class="client-statuses">
+            ${entries.map(([,v])=>`<div class="mini-dot" style="background:${statusMap[v.status]?.bg||'#ccc'};"></div>`).join('')}
+          </div>
+          <div class="client-progress">
+            <div class="pct">${pct}%</div>
+            <div class="lbl">complete</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+  c.innerHTML = html;
+}
+
+async function viewClient(userId) {
+  const c = document.getElementById('view-admin-client');
+  document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+  c.classList.add('active');
+  
+  c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+  
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  const { data: strat } = await supabase.from('strategies').select('*').eq('user_id', userId).single();
+  
+  if (!strat) { c.innerHTML = '<p>No strategy found for this client.</p>'; return; }
+  
+  const kpis = strat.kpis ? (typeof strat.kpis === 'string' ? JSON.parse(strat.kpis) : strat.kpis) : defaultKpis;
+  const cols = allTextFields.filter(f=>f.col).map(f=>f.col);
+  const filled = cols.filter(col => strat[col]?.trim()).length;
+  const pct = Math.round((filled/cols.length)*100);
+  const entries = Object.entries(kpis);
+  const onTrack = entries.filter(([,v])=>v.status==='on-track').length;
+  const atRisk = entries.filter(([,v])=>v.status==='at-risk').length;
+  const offTrack = entries.filter(([,v])=>v.status==='off-track').length;
+  
+  const sc = (label,col) => {
+    const val = strat[col]||'';
+    return `<div class="summary-card"><div class="summary-label">${label}</div><div class="summary-value">${val.trim()?val:'<span class="summary-empty">Not defined yet</span>'}</div></div>`;
+  };
+  
+  const kpiLabels = {revenue:'Revenue',leads:'Leads',calls:'Calls',conversionRate:'Conversion Rate',cac:'CAC',emailGrowth:'Email Growth'};
+  
+  c.innerHTML = `
+    <button class="back-btn" onclick="switchView('admin')">← Back to Clients</button>
+    <div style="margin-bottom:24px;">
+      <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:400;color:var(--ink);">${profile?.full_name || 'Client'}</h2>
+      <p style="font-size:13px;color:var(--ink-mute);">${profile?.email} · Last updated ${strat.updated_at ? new Date(strat.updated_at).toLocaleDateString() : 'never'}</p>
+    </div>
+    <div class="completion-bar-wrap">
+      <div class="completion-header"><span class="completion-label">Strategy Completion</span><span class="completion-pct-text">${pct}%</span></div>
+      <div class="completion-track"><div class="completion-fill" style="width:${pct}%;"></div></div>
+    </div>
+    <div class="kpi-summary">
+      <div class="kpi-summary-card" style="background:#3D5A4C;"><div class="kpi-summary-num">${onTrack}</div><div class="kpi-summary-label">On Track</div></div>
+      <div class="kpi-summary-card" style="background:#C4873A;"><div class="kpi-summary-num">${atRisk}</div><div class="kpi-summary-label">At Risk</div></div>
+      <div class="kpi-summary-card" style="background:#A0522D;"><div class="kpi-summary-num">${offTrack}</div><div class="kpi-summary-label">Off Track</div></div>
+    </div>
+    <div class="dash-section-label">Strategic Foundation</div>
+    <div class="strategy-grid">
+      ${sc('Vision','vision')}${sc('Goals','goals')}${sc('Offers','offers')}${sc('Ideal Client','ideal_client')}
+      ${sc('Pricing','pricing')}${sc('Positioning','positioning')}${sc('Messaging','messaging')}${sc('Funnel','funnel_architecture')}
+      ${sc('Revenue Streams','revenue_streams')}${sc('Team','team')}${sc('Systems','systems')}
+    </div>
+    <div class="dash-section-label">Execution</div>
+    <div class="strategy-grid">
+      ${sc('Quarterly Goals','quarterly_goals')}${sc('Weekly Actions','weekly_actions')}${sc('Campaigns','campaigns')}
+      ${sc('Content Plan','content_plan')}${sc('Lead Generation','lead_generation')}${sc('Sales Pipeline','sales_pipeline')}
+    </div>
+    <div class="dash-section-label">Financial & KPIs</div>
+    <div class="strategy-grid">
+      ${sc('Financial Target','financial_target')}
+      ${entries.map(([key,val])=>{
+        const kpct = val.target&&val.current?Math.min(100,Math.round((parseFloat(val.current)/parseFloat(val.target))*100)):0;
+        const s = statusMap[val.status];
+        return `<div class="dash-kpi-card"><div class="dash-kpi-header"><span class="dash-kpi-label">${kpiLabels[key]||key}</span><span class="dash-kpi-status" style="background:${s.bg};">${s.label}</span></div><div class="dash-kpi-value">${val.current||'—'} <span class="dash-kpi-target">/ ${val.target||'—'}</span></div><div class="dash-kpi-bar"><div class="dash-kpi-bar-fill" style="width:${kpct}%;background:${s.bg};"></div></div></div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════
+// STARTUP
+// ═══════════════════════════════════════
+(async function() {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) { console.error('Session error:', error); showAuth('login'); return; }
+    if (data?.session?.user) {
+      await initApp(data.session.user);
+    } else {
+      showAuth('login');
+    }
+  } catch(e) {
+    console.error('Startup error:', e);
+    showAuth('login');
+  }
+})();
+</script>
+</body>
+</html>
