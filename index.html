@@ -440,26 +440,36 @@ async function handleLogout() {
 async function initApp(user) {
   try {
     currentUser = user;
-    
-    // Get profile
-    const { data: profile, error: profileErr } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    if (profileErr) { console.error('Profile error:', profileErr); }
+
+    // Get or create profile
+    let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    if (!profile) {
+      const { data: newProfile } = await supabase.from('profiles').insert({
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || '',
+        role: 'client'
+      }).select().single();
+      profile = newProfile;
+    }
     currentProfile = profile;
-    
-    // Load strategy
-    const { data: strat, error: stratErr } = await supabase.from('strategies').select('*').eq('user_id', user.id).single();
-    if (stratErr) { console.error('Strategy error:', stratErr); }
+
+    // Get or create strategy
+    let { data: strat } = await supabase.from('strategies').select('*').eq('user_id', user.id).single();
+    if (!strat) {
+      const { data: newStrat } = await supabase.from('strategies').insert({ user_id: user.id }).select().single();
+      strat = newStrat;
+    }
     if (strat) {
       strategyData = strat;
       strategyId = strat.id;
       if (typeof strat.kpis === 'string') strat.kpis = JSON.parse(strat.kpis);
       strategyData.kpis = { ...defaultKpis, ...strat.kpis };
     } else {
-      // Create default strategy data for display
       strategyData = { kpis: {...defaultKpis} };
       allTextFields.forEach(f => { if (f.col) strategyData[f.col] = ''; });
     }
-    
+
     document.getElementById('userInfo').textContent = profile?.full_name || user.email;
     
     buildNav();
