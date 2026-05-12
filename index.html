@@ -293,7 +293,10 @@ let strategyData = null;
 let strategyId = null;
 let saveTimer = null;
 let currentView = 'dashboard';
-let adminViewingClient = null;
+let adminOwnData = null;
+let adminOwnStrategyId = null;
+let isViewingClient = false;
+let viewingClientName = '';
 
 const statusMap = {
   'on-track': { bg: '#3D5A4C', label: 'On Track' },
@@ -456,20 +459,17 @@ async function initApp(user) {
     currentUser = user;
 
     // Get or create profile
-    let { data: profile, error: profileErr } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    console.log('Profile loaded:', profile, 'Error:', profileErr);
+    let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
     if (!profile) {
-      const { data: newProfile, error: insertErr } = await supabase.from('profiles').insert({
+      const { data: newProfile } = await supabase.from('profiles').insert({
         id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || '',
         role: 'client'
       }).select().single();
-      console.log('Profile created:', newProfile, 'Error:', insertErr);
       profile = newProfile;
     }
     currentProfile = profile;
-    console.log('currentProfile role:', currentProfile?.role);
 
     // Get or create strategy
     let { data: strat } = await supabase.from('strategies').select('*').eq('user_id', user.id).single();
@@ -505,8 +505,20 @@ async function initApp(user) {
 function buildNav() {
   const nav = document.getElementById('nav');
   const isAdmin = currentProfile?.role === 'admin';
-  
-  let html = `
+
+  let html = '';
+
+  if (isViewingClient) {
+    html += `<button class="nav-btn" onclick="backToMyBusiness()" style="border-right:1px solid var(--cream-dark);color:var(--amber);font-weight:600;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+      My Business
+    </button>
+    <span style="display:flex;align-items:center;padding:0 14px;font-size:11px;color:var(--amber);font-weight:600;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;">
+      ${viewingClientName}
+    </span>`;
+  }
+
+  html += `
     <button class="nav-btn active" data-view="dashboard" onclick="switchView('dashboard')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       One Page
@@ -524,8 +536,8 @@ function buildNav() {
       Tracking
     </button>
   `;
-  
-  if (isAdmin) {
+
+  if (isAdmin && !isViewingClient) {
     html += `
       <button class="nav-btn" data-view="admin" onclick="switchView('admin')" style="border-left:1px solid var(--cream-dark);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -533,7 +545,7 @@ function buildNav() {
       </button>
     `;
   }
-  
+
   nav.innerHTML = html;
 }
 
@@ -835,70 +847,44 @@ async function renderAdmin() {
   c.innerHTML = html;
 }
 
+function backToMyBusiness() {
+  strategyData = adminOwnData;
+  strategyId = adminOwnStrategyId;
+  isViewingClient = false;
+  viewingClientName = '';
+  adminOwnData = null;
+  adminOwnStrategyId = null;
+  buildNav();
+  switchView('dashboard');
+}
+
 async function viewClient(userId) {
-  const c = document.getElementById('view-admin-client');
+  const loadingHtml = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+  document.getElementById('view-dashboard').innerHTML = loadingHtml;
   document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-  c.classList.add('active');
-  
-  c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
-  
+  document.getElementById('view-dashboard').classList.add('active');
+
   const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
   const { data: strat } = await supabase.from('strategies').select('*').eq('user_id', userId).single();
+
+  if (!strat) { document.getElementById('view-dashboard').innerHTML = '<p style="padding:20px;color:#999;">No strategy found for this client.</p>'; return; }
   
-  if (!strat) { c.innerHTML = '<p>No strategy found for this client.</p>'; return; }
-  
-  const kpis = strat.kpis ? (typeof strat.kpis === 'string' ? JSON.parse(strat.kpis) : strat.kpis) : defaultKpis;
-  const cols = allTextFields.filter(f=>f.col).map(f=>f.col);
-  const filled = cols.filter(col => strat[col]?.trim()).length;
-  const pct = Math.round((filled/cols.length)*100);
-  const entries = Object.entries(kpis);
-  const onTrack = entries.filter(([,v])=>v.status==='on-track').length;
-  const atRisk = entries.filter(([,v])=>v.status==='at-risk').length;
-  const offTrack = entries.filter(([,v])=>v.status==='off-track').length;
-  
-  const sc = (label,col) => {
-    const val = strat[col]||'';
-    return `<div class="summary-card"><div class="summary-label">${label}</div><div class="summary-value">${val.trim()?val:'<span class="summary-empty">Not defined yet</span>'}</div></div>`;
-  };
-  
-  const kpiLabels = {revenue:'Revenue',leads:'Leads',calls:'Calls',conversionRate:'Conversion Rate',cac:'CAC',emailGrowth:'Email Growth'};
-  
-  c.innerHTML = `
-    <button class="back-btn" onclick="switchView('admin')">← Back to Clients</button>
-    <div style="margin-bottom:24px;">
-      <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:400;color:var(--ink);">${profile?.full_name || 'Client'}</h2>
-      <p style="font-size:13px;color:var(--ink-mute);">${profile?.email} · Last updated ${strat.updated_at ? new Date(strat.updated_at).toLocaleDateString() : 'never'}</p>
-    </div>
-    <div class="completion-bar-wrap">
-      <div class="completion-header"><span class="completion-label">Strategy Completion</span><span class="completion-pct-text">${pct}%</span></div>
-      <div class="completion-track"><div class="completion-fill" style="width:${pct}%;"></div></div>
-    </div>
-    <div class="kpi-summary">
-      <div class="kpi-summary-card" style="background:#3D5A4C;"><div class="kpi-summary-num">${onTrack}</div><div class="kpi-summary-label">On Track</div></div>
-      <div class="kpi-summary-card" style="background:#C4873A;"><div class="kpi-summary-num">${atRisk}</div><div class="kpi-summary-label">At Risk</div></div>
-      <div class="kpi-summary-card" style="background:#A0522D;"><div class="kpi-summary-num">${offTrack}</div><div class="kpi-summary-label">Off Track</div></div>
-    </div>
-    <div class="dash-section-label">Strategic Foundation</div>
-    <div class="strategy-grid">
-      ${sc('Vision','vision')}${sc('Goals','goals')}${sc('Offers','offers')}${sc('Ideal Client','ideal_client')}
-      ${sc('Pricing','pricing')}${sc('Positioning','positioning')}${sc('Messaging','messaging')}${sc('Funnel','funnel_architecture')}
-      ${sc('Revenue Streams','revenue_streams')}${sc('Team','team')}${sc('Systems','systems')}
-    </div>
-    <div class="dash-section-label">Execution</div>
-    <div class="strategy-grid">
-      ${sc('Quarterly Goals','quarterly_goals')}${sc('Weekly Actions','weekly_actions')}${sc('Campaigns','campaigns')}
-      ${sc('Content Plan','content_plan')}${sc('Lead Generation','lead_generation')}${sc('Sales Pipeline','sales_pipeline')}
-    </div>
-    <div class="dash-section-label">Financial & KPIs</div>
-    <div class="strategy-grid">
-      ${sc('Financial Target','financial_target')}
-      ${entries.map(([key,val])=>{
-        const kpct = val.target&&val.current?Math.min(100,Math.round((parseFloat(val.current)/parseFloat(val.target))*100)):0;
-        const s = statusMap[val.status];
-        return `<div class="dash-kpi-card"><div class="dash-kpi-header"><span class="dash-kpi-label">${kpiLabels[key]||key}</span><span class="dash-kpi-status" style="background:${s.bg};">${s.label}</span></div><div class="dash-kpi-value">${val.current||'—'} <span class="dash-kpi-target">/ ${val.target||'—'}</span></div><div class="dash-kpi-bar"><div class="dash-kpi-bar-fill" style="width:${kpct}%;background:${s.bg};"></div></div></div>`;
-      }).join('')}
-    </div>
-  `;
+  // Save admin's own data before switching
+  if (!isViewingClient) {
+    adminOwnData = { ...strategyData, kpis: { ...strategyData?.kpis } };
+    adminOwnStrategyId = strategyId;
+  }
+
+  // Load client data into main state
+  strategyData = strat;
+  strategyId = strat.id;
+  if (typeof strat.kpis === 'string') strat.kpis = JSON.parse(strat.kpis);
+  strategyData.kpis = { ...defaultKpis, ...strat.kpis };
+  isViewingClient = true;
+  viewingClientName = profile?.full_name || profile?.email || 'Client';
+
+  buildNav();
+  switchView('dashboard');
 }
 
 // ═══════════════════════════════════════
