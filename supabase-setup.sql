@@ -1,10 +1,10 @@
 -- ═══════════════════════════════════════════════════════
 -- ONE PAGE BUSINESS — Database Setup
--- Run this in Supabase SQL Editor
+-- Safe to run multiple times (idempotent)
 -- ═══════════════════════════════════════════════════════
 
 -- 1. Profiles table (extends Supabase auth)
-CREATE TABLE profiles (
+CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   email TEXT NOT NULL,
   full_name TEXT NOT NULL DEFAULT '',
@@ -13,7 +13,7 @@ CREATE TABLE profiles (
 );
 
 -- 2. Strategy data table (one row per client)
-CREATE TABLE strategies (
+CREATE TABLE IF NOT EXISTS strategies (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL UNIQUE,
   vision TEXT DEFAULT '',
@@ -51,17 +51,17 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE strategies ENABLE ROW LEVEL SECURITY;
 
 -- 4. Profiles policies
--- Users can read their own profile
+DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
 CREATE POLICY "Users can view own profile"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
--- Users can update their own profile
+DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
 CREATE POLICY "Users can update own profile"
   ON profiles FOR UPDATE
   USING (auth.uid() = id);
 
--- Admin can see all profiles
+DROP POLICY IF EXISTS "Admin can view all profiles" ON profiles;
 CREATE POLICY "Admin can view all profiles"
   ON profiles FOR SELECT
   USING (
@@ -70,28 +70,28 @@ CREATE POLICY "Admin can view all profiles"
     )
   );
 
--- Allow insert on signup (via trigger)
+DROP POLICY IF EXISTS "Allow insert on signup" ON profiles;
 CREATE POLICY "Allow insert on signup"
   ON profiles FOR INSERT
   WITH CHECK (auth.uid() = id);
 
 -- 5. Strategies policies
--- Users can read their own strategy
+DROP POLICY IF EXISTS "Users can view own strategy" ON strategies;
 CREATE POLICY "Users can view own strategy"
   ON strategies FOR SELECT
   USING (auth.uid() = user_id);
 
--- Users can insert their own strategy
+DROP POLICY IF EXISTS "Users can insert own strategy" ON strategies;
 CREATE POLICY "Users can insert own strategy"
   ON strategies FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- Users can update their own strategy
+DROP POLICY IF EXISTS "Users can update own strategy" ON strategies;
 CREATE POLICY "Users can update own strategy"
   ON strategies FOR UPDATE
   USING (auth.uid() = user_id);
 
--- Admin can see all strategies
+DROP POLICY IF EXISTS "Admin can view all strategies" ON strategies;
 CREATE POLICY "Admin can view all strategies"
   ON strategies FOR SELECT
   USING (
@@ -100,7 +100,7 @@ CREATE POLICY "Admin can view all strategies"
     )
   );
 
--- Admin can update all strategies
+DROP POLICY IF EXISTS "Admin can update all strategies" ON strategies;
 CREATE POLICY "Admin can update all strategies"
   ON strategies FOR UPDATE
   USING (
@@ -119,15 +119,18 @@ BEGIN
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
     'client'
-  );
-  
+  )
+  ON CONFLICT (id) DO NOTHING;
+
   INSERT INTO public.strategies (user_id)
-  VALUES (NEW.id);
-  
+  VALUES (NEW.id)
+  ON CONFLICT (user_id) DO NOTHING;
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
@@ -141,6 +144,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS strategies_updated_at ON strategies;
 CREATE TRIGGER strategies_updated_at
   BEFORE UPDATE ON strategies
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
