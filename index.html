@@ -456,17 +456,20 @@ async function initApp(user) {
     currentUser = user;
 
     // Get or create profile
-    let { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    let { data: profile, error: profileErr } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    console.log('Profile loaded:', profile, 'Error:', profileErr);
     if (!profile) {
-      const { data: newProfile } = await supabase.from('profiles').insert({
+      const { data: newProfile, error: insertErr } = await supabase.from('profiles').insert({
         id: user.id,
         email: user.email,
         full_name: user.user_metadata?.full_name || '',
         role: 'client'
       }).select().single();
+      console.log('Profile created:', newProfile, 'Error:', insertErr);
       profile = newProfile;
     }
     currentProfile = profile;
+    console.log('currentProfile role:', currentProfile?.role);
 
     // Get or create strategy
     let { data: strat } = await supabase.from('strategies').select('*').eq('user_id', user.id).single();
