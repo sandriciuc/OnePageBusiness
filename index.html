@@ -164,6 +164,39 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .footer{text-align:center;padding:20px;font-size:11px;color:#999;letter-spacing:0.06em;border-top:1px solid var(--cream-dark);}
 .view-section{display:none;}.view-section.active{display:block;}
 
+/* ═══ MANAGEMENT ═══ */
+.mgmt-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.btn-outline{background:transparent;border:1px solid var(--green);color:var(--green);border-radius:8px;padding:8px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;}
+.btn-outline:hover{background:var(--green);color:var(--cream);}
+.project-card{background:var(--white);border-radius:12px;border:1px solid rgba(61,90,76,0.1);margin-bottom:16px;overflow:hidden;transition:border-color 0.2s;}
+.project-card:hover{border-color:rgba(61,90,76,0.2);}
+.project-card-header{padding:20px 24px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+.project-name-input{font-family:'Playfair Display',serif;font-size:18px;font-weight:400;color:var(--ink);border:none;border-bottom:1px solid transparent;background:transparent;outline:none;width:100%;transition:border-color 0.2s;}
+.project-name-input:focus{border-bottom-color:var(--green);}
+.project-due{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-mute);white-space:nowrap;}
+.project-due input[type=date]{border:1px solid var(--cream-dark);border-radius:6px;padding:4px 8px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);background:var(--cream);outline:none;cursor:pointer;}
+.project-objective{padding:0 24px 12px;}
+.project-objective textarea{width:100%;border:1px solid var(--cream-dark);border-radius:8px;padding:10px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--cream);resize:vertical;outline:none;line-height:1.5;transition:border-color 0.2s;}
+.project-objective textarea:focus{border-color:var(--green);background:var(--white);}
+.project-meta{display:flex;align-items:center;justify-content:space-between;padding:0 24px 12px;}
+.project-progress-text{font-size:11px;color:var(--ink-mute);}
+.btn-danger-sm{background:none;border:1px solid rgba(192,57,43,0.25);color:var(--red);border-radius:6px;padding:4px 10px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;}
+.btn-danger-sm:hover{background:rgba(192,57,43,0.06);border-color:var(--red);}
+.task-list{border-top:1px solid var(--cream-dark);padding:8px 24px;}
+.task-item{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.04);}
+.task-item:last-child{border-bottom:none;}
+.task-checkbox{width:15px;height:15px;cursor:pointer;accent-color:var(--green);flex-shrink:0;}
+.task-title-input{flex:1;border:none;border-bottom:1px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;padding:1px 0;transition:border-color 0.2s;}
+.task-title-input:focus{border-bottom-color:var(--green);}
+.task-item.done .task-title-input{text-decoration:line-through;color:#aaa;}
+.task-due-input{border:1px solid var(--cream-dark);border-radius:6px;padding:3px 7px;font-size:11px;color:var(--ink-mute);font-family:'DM Sans',sans-serif;background:var(--cream);outline:none;cursor:pointer;}
+.task-item.overdue .task-due-input{border-color:#C4873A;color:#C4873A;background:rgba(196,135,58,0.08);}
+.task-del{background:none;border:none;color:#ddd;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;}
+.task-del:hover{color:var(--red);}
+.add-task-row{padding:10px 24px 16px;}
+.add-task-btn{background:none;border:none;color:var(--green);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;}
+.add-task-btn:hover{color:var(--green-light);}
+
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .animate-in{animation:fadeIn 0.3s ease forwards;}
 
@@ -260,6 +293,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
     <div id="view-kpis" class="view-section"></div>
     <div id="view-admin" class="view-section"></div>
     <div id="view-admin-client" class="view-section"></div>
+    <div id="view-management" class="view-section"></div>
   </main>
 
   <footer class="footer">ONE PAGE BUSINESS · Clarity · Systems · Results</footer>
@@ -543,6 +577,10 @@ function buildNav() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Clients
       </button>
+      <button class="nav-btn" data-view="management" onclick="switchView('management')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="11" height="4" rx="1"/></svg>
+        Management
+      </button>
     `;
   }
 
@@ -562,6 +600,7 @@ function switchView(viewId) {
   else if (viewId === 'execution') renderExecution();
   else if (viewId === 'kpis') renderKPIs();
   else if (viewId === 'admin') renderAdmin();
+  else if (viewId === 'management') renderManagement();
 }
 
 // ═══════════════════════════════════════
@@ -885,6 +924,137 @@ async function viewClient(userId) {
 
   buildNav();
   switchView('dashboard');
+}
+
+// ═══════════════════════════════════════
+// MANAGEMENT
+// ═══════════════════════════════════════
+let projectsData = [];
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function renderManagement() {
+  const c = document.getElementById('view-management');
+  c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+  const { data } = await supabase.from('projects').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
+  projectsData = data || [];
+  drawManagement();
+}
+
+function drawManagement() {
+  const c = document.getElementById('view-management');
+  let html = `<div class="mgmt-header"><h2 class="section-title" style="margin:0;">Management</h2><button class="btn-outline" onclick="createProject()">+ New Project</button></div>`;
+
+  if (projectsData.length === 0) {
+    html += '<div style="text-align:center;padding:60px 20px;color:var(--ink-mute);font-size:14px;">No projects yet. Click "+ New Project" to get started.</div>';
+  }
+
+  projectsData.forEach(p => {
+    const tasks = Array.isArray(p.tasks) ? p.tasks : [];
+    const active = tasks.filter(t => !t.completed);
+    const done = tasks.filter(t => t.completed);
+    const ordered = [...active, ...done];
+    const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
+
+    html += `<div class="project-card">
+      <div class="project-card-header">
+        <input class="project-name-input" value="${escHtml(p.name)}" placeholder="Project name"
+          onblur="updateProject('${p.id}','name',this.value)">
+        <div class="project-due">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Due: <input type="date" value="${p.due_date||''}" onchange="updateProject('${p.id}','due_date',this.value)">
+        </div>
+      </div>
+      <div class="project-objective">
+        <textarea rows="2" placeholder="Project objective..."
+          onblur="updateProject('${p.id}','objective',this.value)">${escHtml(p.objective)}</textarea>
+      </div>
+      <div class="project-meta">
+        <span class="project-progress-text">${tasks.length ? `${done.length}/${tasks.length} tasks · ${pct}% complete` : 'No tasks yet'}</span>
+        <button class="btn-danger-sm" onclick="deleteProject('${p.id}')">Delete project</button>
+      </div>`;
+
+    if (ordered.length > 0) {
+      html += '<div class="task-list">';
+      ordered.forEach(t => {
+        const overdue = p.due_date && t.due_date && t.due_date > p.due_date;
+        html += `<div class="task-item${t.completed ? ' done' : ''}${overdue ? ' overdue' : ''}">
+          <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}
+            onchange="toggleTask('${p.id}','${t.id}',this.checked)">
+          <input class="task-title-input" value="${escHtml(t.title)}" placeholder="Task description"
+            onblur="updateTask('${p.id}','${t.id}','title',this.value)">
+          <input type="date" class="task-due-input" value="${t.due_date||''}"
+            onchange="updateTask('${p.id}','${t.id}','due_date',this.value)">
+          <button class="task-del" onclick="deleteTask('${p.id}','${t.id}')" title="Delete task">×</button>
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    html += `<div class="add-task-row"><button class="add-task-btn" onclick="addTask('${p.id}')">+ Add task</button></div></div>`;
+  });
+
+  c.innerHTML = html;
+}
+
+async function createProject() {
+  const { data } = await supabase.from('projects').insert({
+    user_id: currentUser.id, name: 'New Project', objective: '', tasks: []
+  }).select().single();
+  if (data) { projectsData.unshift(data); drawManagement(); }
+}
+
+async function updateProject(id, field, value) {
+  const idx = projectsData.findIndex(p => p.id === id);
+  if (idx === -1) return;
+  projectsData[idx][field] = value;
+  await supabase.from('projects').update({ [field]: value }).eq('id', id);
+}
+
+async function deleteProject(id) {
+  if (!confirm('Delete this project and all its tasks?')) return;
+  projectsData = projectsData.filter(p => p.id !== id);
+  await supabase.from('projects').delete().eq('id', id);
+  drawManagement();
+}
+
+async function addTask(projectId) {
+  const idx = projectsData.findIndex(p => p.id === projectId);
+  if (idx === -1) return;
+  const task = { id: crypto.randomUUID(), title: '', completed: false, due_date: '' };
+  projectsData[idx].tasks = [...(projectsData[idx].tasks || []), task];
+  await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
+  drawManagement();
+}
+
+async function toggleTask(projectId, taskId, checked) {
+  const idx = projectsData.findIndex(p => p.id === projectId);
+  if (idx === -1) return;
+  const ti = projectsData[idx].tasks.findIndex(t => t.id === taskId);
+  if (ti === -1) return;
+  projectsData[idx].tasks[ti].completed = checked;
+  await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
+  drawManagement();
+}
+
+async function updateTask(projectId, taskId, field, value) {
+  const idx = projectsData.findIndex(p => p.id === projectId);
+  if (idx === -1) return;
+  const ti = projectsData[idx].tasks.findIndex(t => t.id === taskId);
+  if (ti === -1) return;
+  projectsData[idx].tasks[ti][field] = value;
+  await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
+  if (field === 'due_date') drawManagement();
+}
+
+async function deleteTask(projectId, taskId) {
+  const idx = projectsData.findIndex(p => p.id === projectId);
+  if (idx === -1) return;
+  projectsData[idx].tasks = projectsData[idx].tasks.filter(t => t.id !== taskId);
+  await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
+  drawManagement();
 }
 
 // ═══════════════════════════════════════

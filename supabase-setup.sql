@@ -144,3 +144,28 @@ DROP TRIGGER IF EXISTS strategies_updated_at ON strategies;
 CREATE TRIGGER strategies_updated_at
   BEFORE UPDATE ON strategies
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 8. Projects table (admin management)
+CREATE TABLE IF NOT EXISTS projects (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL DEFAULT 'New Project',
+  objective TEXT DEFAULT '',
+  due_date DATE,
+  tasks JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own projects" ON projects;
+CREATE POLICY "Users can manage own projects"
+  ON projects FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS projects_updated_at ON projects;
+CREATE TRIGGER projects_updated_at
+  BEFORE UPDATE ON projects
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
