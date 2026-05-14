@@ -196,18 +196,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .add-task-row{padding:10px 24px 16px;}
 .add-task-btn{background:none;border:none;color:var(--green);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;}
 .add-task-btn:hover{color:var(--green-light);}
-.mgmt-tabbar{display:flex;background:var(--white);border-bottom:1px solid var(--cream-dark);margin-bottom:24px;align-items:stretch;}
+.mgmt-tabbar{display:flex;background:var(--white);border:1px solid var(--cream-dark);border-radius:12px;margin-bottom:24px;overflow:hidden;align-items:stretch;}
 .mgmt-tab-fixed{flex-shrink:0;display:flex;align-items:stretch;}
-.mgmt-tab-scroll{display:flex;overflow-x:auto;flex:1;scrollbar-width:none;}
+.mgmt-tab-scroll{display:flex;overflow-x:auto;flex:1;scrollbar-width:none;border-left:1px solid var(--cream-dark);border-right:1px solid var(--cream-dark);}
 .mgmt-tab-scroll::-webkit-scrollbar{display:none;}
-.mgmt-tab-sep{width:1px;background:var(--cream-dark);flex-shrink:0;margin:6px 0;}
+.mgmt-proj-group{display:flex;align-items:stretch;border-right:1px solid var(--cream-dark);}
+.mgmt-proj-group:last-child{border-right:none;}
 .mgmt-tab{display:flex;align-items:center;gap:5px;padding:10px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:#999;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;letter-spacing:0.03em;text-transform:uppercase;}
 .mgmt-tab:hover{color:var(--ink-soft);}
 .mgmt-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
-.mgmt-tab-move{background:none;border:none;color:#ccc;cursor:pointer;font-size:9px;padding:0 1px;line-height:1;transition:color 0.15s;}
-.mgmt-tab-move:hover{color:var(--green);}
-.mgmt-new-tab{flex-shrink:0;padding:10px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--green);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;letter-spacing:0.03em;text-transform:uppercase;}
-.mgmt-new-tab:hover{color:var(--green-light);}
+.mgmt-tab-overview{color:var(--amber) !important;border-right:1px solid var(--cream-dark);}
+.mgmt-tab-overview.active{color:var(--amber) !important;border-bottom-color:var(--amber);}
+.mgmt-tab-move{background:transparent;border:none;color:#ccc;cursor:pointer;font-size:9px;padding:0 6px;line-height:1;transition:color 0.15s;align-self:stretch;display:flex;align-items:center;}
+.mgmt-tab-move:hover{color:var(--green);background:rgba(61,90,76,0.05);}
+.mgmt-new-tab{flex-shrink:0;padding:10px 16px;border:none;border-left:1px solid var(--cream-dark);background:transparent;color:var(--green);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;letter-spacing:0.03em;text-transform:uppercase;transition:background 0.2s;}
+.mgmt-new-tab:hover{background:rgba(61,90,76,0.05);}
 .upcoming-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
 .upcoming-item{background:var(--white);border-radius:10px;padding:13px 18px;border:1px solid rgba(61,90,76,0.08);display:flex;align-items:center;gap:14px;cursor:default;}
 .upcoming-item.warn{border-color:rgba(196,135,58,0.3);background:rgba(196,135,58,0.04);}
@@ -968,22 +971,22 @@ function drawManagement() {
   const c = document.getElementById('view-management');
   let html = '<div class="mgmt-tabbar">';
   html += `<div class="mgmt-tab-fixed">
-    <button class="mgmt-tab${activeMgmtTab==='overview'?' active':''}" onclick="setMgmtTab('overview')">Overview</button>
+    <button class="mgmt-tab mgmt-tab-overview${activeMgmtTab==='overview'?' active':''}" onclick="setMgmtTab('overview')">Overview</button>
   </div>
-  <div class="mgmt-tab-sep"></div>
   <div class="mgmt-tab-scroll">`;
   projectsData.forEach((p,i) => {
     const tasks = Array.isArray(p.tasks)?p.tasks:[];
     const done = tasks.filter(t=>t.completed).length;
-    html += `<button class="mgmt-tab${activeMgmtTab===p.id?' active':''}" onclick="setMgmtTab('${p.id}')">
-      ${escHtml(p.name||'Untitled')}
-      <span style="font-size:9px;color:#bbb;font-weight:400;">${done}/${tasks.length}</span>
-      <span onclick="event.stopPropagation()" style="display:inline-flex;gap:1px;margin-left:2px;">
-        ${i>0?`<button class="mgmt-tab-move" onclick="moveProject('${p.id}',-1)">◀</button>`:''}
-        ${i<projectsData.length-1?`<button class="mgmt-tab-move" onclick="moveProject('${p.id}',1)">▶</button>`:''}
-      </span></button>`;
+    html += `<div class="mgmt-proj-group">
+      ${i>0?`<button class="mgmt-tab-move" onclick="moveProject('${p.id}',-1)">◀</button>`:''}
+      <button class="mgmt-tab${activeMgmtTab===p.id?' active':''}" onclick="setMgmtTab('${p.id}')">
+        ${escHtml(p.name||'Untitled')}
+        <span style="font-size:9px;color:#bbb;font-weight:400;">${done}/${tasks.length}</span>
+      </button>
+      ${i<projectsData.length-1?`<button class="mgmt-tab-move" onclick="moveProject('${p.id}',1)">▶</button>`:''}
+    </div>`;
   });
-  html += `</div><div class="mgmt-tab-sep"></div>
+  html += `</div>
   <div class="mgmt-tab-fixed"><button class="mgmt-new-tab" onclick="createProject()">+ New Project</button></div>
   </div>`;
   html += activeMgmtTab==='overview' ? drawOverviewContent() : (projectsData.find(p=>p.id===activeMgmtTab) ? drawProjectContent(projectsData.find(p=>p.id===activeMgmtTab)) : '');
