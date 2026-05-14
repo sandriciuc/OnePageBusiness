@@ -196,6 +196,23 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .add-task-row{padding:10px 24px 16px;}
 .add-task-btn{background:none;border:none;color:var(--green);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;}
 .add-task-btn:hover{color:var(--green-light);}
+.mgmt-tabs{display:flex;background:var(--white);border:1px solid var(--cream-dark);border-radius:12px;margin-bottom:20px;overflow-x:auto;align-items:stretch;}
+.mgmt-tab{display:flex;align-items:center;gap:6px;padding:11px 16px;border:none;border-right:1px solid var(--cream-dark);background:transparent;color:#999;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;flex-shrink:0;}
+.mgmt-tab:last-of-type{border-right:none;}
+.mgmt-tab:hover{color:var(--ink-soft);background:rgba(61,90,76,0.03);}
+.mgmt-tab.active{color:var(--green);background:rgba(61,90,76,0.06);font-weight:600;}
+.mgmt-tab-move{background:none;border:none;color:#ccc;cursor:pointer;font-size:10px;padding:0 2px;line-height:1;transition:color 0.15s;}
+.mgmt-tab-move:hover{color:var(--green);}
+.mgmt-new-tab{margin-left:auto;padding:11px 16px;border:none;border-left:1px solid var(--cream-dark);background:transparent;color:var(--green);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background 0.2s;}
+.mgmt-new-tab:hover{background:rgba(61,90,76,0.06);}
+.upcoming-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;}
+.upcoming-item{background:var(--white);border-radius:10px;padding:13px 18px;border:1px solid rgba(61,90,76,0.08);display:flex;align-items:center;gap:14px;cursor:default;}
+.upcoming-item.warn{border-color:rgba(196,135,58,0.3);background:rgba(196,135,58,0.04);}
+.upcoming-proj{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--amber);font-weight:600;white-space:nowrap;cursor:pointer;}
+.upcoming-proj:hover{text-decoration:underline;}
+.upcoming-title{flex:1;font-size:13px;color:var(--ink);}
+.upcoming-date{font-size:11px;color:var(--ink-mute);white-space:nowrap;text-align:right;}
+.upcoming-date.warn-date{color:#C4873A;font-weight:500;}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .animate-in{animation:fadeIn 0.3s ease forwards;}
@@ -930,6 +947,7 @@ async function viewClient(userId) {
 // MANAGEMENT
 // ═══════════════════════════════════════
 let projectsData = [];
+let activeMgmtTab = 'overview';
 
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -938,84 +956,143 @@ function escHtml(s) {
 async function renderManagement() {
   const c = document.getElementById('view-management');
   c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
-  const { data } = await supabase.from('projects').select('*').eq('user_id', currentUser.id).order('created_at', { ascending: false });
-  projectsData = data || [];
+  const { data } = await supabase.from('projects').select('*').eq('user_id', currentUser.id).order('position',{ascending:true}).order('created_at',{ascending:true});
+  projectsData = (data||[]).map((p,i) => ({...p, position: p.position??i}));
   drawManagement();
 }
 
 function drawManagement() {
   const c = document.getElementById('view-management');
-  let html = `<div class="mgmt-header"><h2 class="section-title" style="margin:0;">Management</h2><button class="btn-outline" onclick="createProject()">+ New Project</button></div>`;
-
-  if (projectsData.length === 0) {
-    html += '<div style="text-align:center;padding:60px 20px;color:var(--ink-mute);font-size:14px;">No projects yet. Click "+ New Project" to get started.</div>';
-  }
-
-  projectsData.forEach(p => {
-    const tasks = Array.isArray(p.tasks) ? p.tasks : [];
-    const active = tasks.filter(t => !t.completed);
-    const done = tasks.filter(t => t.completed);
-    const ordered = [...active, ...done];
-    const pct = tasks.length ? Math.round((done.length / tasks.length) * 100) : 0;
-
-    html += `<div class="project-card">
-      <div class="project-card-header">
-        <input class="project-name-input" value="${escHtml(p.name)}" placeholder="Project name"
-          onblur="updateProject('${p.id}','name',this.value)">
-        <div class="project-due">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          Due: <input type="date" value="${p.due_date||''}" onchange="updateProject('${p.id}','due_date',this.value)">
-        </div>
-      </div>
-      <div class="project-objective">
-        <textarea rows="2" placeholder="Project objective..."
-          onblur="updateProject('${p.id}','objective',this.value)">${escHtml(p.objective)}</textarea>
-      </div>
-      <div class="project-meta">
-        <span class="project-progress-text">${tasks.length ? `${done.length}/${tasks.length} tasks · ${pct}% complete` : 'No tasks yet'}</span>
-        <button class="btn-danger-sm" onclick="deleteProject('${p.id}')">Delete project</button>
-      </div>`;
-
-    if (ordered.length > 0) {
-      html += '<div class="task-list">';
-      ordered.forEach(t => {
-        const overdue = p.due_date && t.due_date && t.due_date > p.due_date;
-        html += `<div class="task-item${t.completed ? ' done' : ''}${overdue ? ' overdue' : ''}">
-          <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}
-            onchange="toggleTask('${p.id}','${t.id}',this.checked)">
-          <input class="task-title-input" value="${escHtml(t.title)}" placeholder="Task description"
-            onblur="updateTask('${p.id}','${t.id}','title',this.value)">
-          <input type="date" class="task-due-input" value="${t.due_date||''}"
-            onchange="updateTask('${p.id}','${t.id}','due_date',this.value)">
-          <button class="task-del" onclick="deleteTask('${p.id}','${t.id}')" title="Delete task">×</button>
-        </div>`;
-      });
-      html += '</div>';
-    }
-
-    html += `<div class="add-task-row"><button class="add-task-btn" onclick="addTask('${p.id}')">+ Add task</button></div></div>`;
+  let html = '<div class="mgmt-tabs">';
+  html += `<button class="mgmt-tab${activeMgmtTab==='overview'?' active':''}" onclick="setMgmtTab('overview')">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Overview</button>`;
+  projectsData.forEach((p,i) => {
+    const tasks = Array.isArray(p.tasks)?p.tasks:[];
+    const done = tasks.filter(t=>t.completed).length;
+    html += `<button class="mgmt-tab${activeMgmtTab===p.id?' active':''}" onclick="setMgmtTab('${p.id}')">
+      ${escHtml(p.name||'Untitled')} <span style="font-size:10px;color:#bbb;">${done}/${tasks.length}</span>
+      <span onclick="event.stopPropagation()" style="display:inline-flex;gap:1px;margin-left:3px;">
+        ${i>0?`<button class="mgmt-tab-move" onclick="moveProject('${p.id}',-1)">◀</button>`:''}
+        ${i<projectsData.length-1?`<button class="mgmt-tab-move" onclick="moveProject('${p.id}',1)">▶</button>`:''}
+      </span></button>`;
   });
-
+  html += `<button class="mgmt-new-tab" onclick="createProject()">+ New Project</button></div>`;
+  html += activeMgmtTab==='overview' ? drawOverviewContent() : (projectsData.find(p=>p.id===activeMgmtTab) ? drawProjectContent(projectsData.find(p=>p.id===activeMgmtTab)) : '');
   c.innerHTML = html;
 }
 
+function drawOverviewContent() {
+  const today = new Date().toISOString().split('T')[0];
+  const allTasks = [];
+  projectsData.forEach(p => {
+    (Array.isArray(p.tasks)?p.tasks:[]).filter(t=>!t.completed&&t.due_date).forEach(t => {
+      allTasks.push({...t, projectName:p.name, projectDue:p.due_date, projectId:p.id});
+    });
+  });
+  allTasks.sort((a,b)=>a.due_date.localeCompare(b.due_date));
+  const next10 = allTasks.slice(0,10);
+  let html = `<div style="margin-bottom:16px;"><div class="section-layer">Overview</div>
+    <h3 style="font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--ink);margin-bottom:4px;">Next 10 Upcoming Tasks</h3>
+    <p style="font-size:13px;color:var(--ink-mute);">All projects · sorted by due date · incomplete only</p></div>`;
+  if (!next10.length) return html+'<div style="text-align:center;padding:40px;color:var(--ink-mute);font-size:13px;">No upcoming tasks with due dates.</div>';
+  html += '<div class="upcoming-list">';
+  next10.forEach(t => {
+    const pastProject = t.projectDue && t.due_date > t.projectDue;
+    const overdue = t.due_date < today;
+    const warn = pastProject||overdue;
+    html += `<div class="upcoming-item${warn?' warn':''}">
+      <span class="upcoming-proj" onclick="setMgmtTab('${t.projectId}')">${escHtml(t.projectName)}</span>
+      <span class="upcoming-title">${escHtml(t.title||'Untitled task')}</span>
+      <span class="upcoming-date${warn?' warn-date':''}">${overdue?'⚠ ':''}${t.due_date}${pastProject?' · past project deadline':''}</span>
+    </div>`;
+  });
+  return html+'</div>';
+}
+
+function drawProjectContent(p) {
+  const tasks = Array.isArray(p.tasks)?p.tasks:[];
+  const active = tasks.filter(t=>!t.completed);
+  const done = tasks.filter(t=>t.completed);
+  const ordered = [...active,...done];
+  const pct = tasks.length?Math.round((done.length/tasks.length)*100):0;
+  let html = `<div class="project-card" style="margin-bottom:0;">
+    <div class="project-card-header">
+      <input class="project-name-input" value="${escHtml(p.name)}" placeholder="Project name"
+        onblur="updateProjectAndRedraw('${p.id}','name',this.value)">
+      <div class="project-due">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Due: <input type="date" value="${p.due_date||''}" onchange="updateProjectAndRedraw('${p.id}','due_date',this.value)">
+      </div>
+    </div>
+    <div class="project-objective">
+      <textarea rows="2" placeholder="Project objective..."
+        onblur="updateProject('${p.id}','objective',this.value)">${escHtml(p.objective)}</textarea>
+    </div>
+    <div class="project-meta">
+      <span class="project-progress-text">${tasks.length?`${done.length}/${tasks.length} tasks · ${pct}% complete`:'No tasks yet'}</span>
+      <button class="btn-danger-sm" onclick="deleteProject('${p.id}')">Delete project</button>
+    </div>`;
+  if (ordered.length > 0) {
+    html += '<div class="task-list">';
+    ordered.forEach(t => {
+      const overdue = p.due_date && t.due_date && t.due_date > p.due_date;
+      html += `<div class="task-item${t.completed?' done':''}${overdue?' overdue':''}">
+        <input type="checkbox" class="task-checkbox" ${t.completed?'checked':''}
+          onchange="toggleTask('${p.id}','${t.id}',this.checked)">
+        <input class="task-title-input" value="${escHtml(t.title)}" placeholder="Task description"
+          onblur="updateTask('${p.id}','${t.id}','title',this.value)">
+        <input type="date" class="task-due-input" value="${t.due_date||''}"
+          onchange="updateTask('${p.id}','${t.id}','due_date',this.value);drawManagement()">
+        <button class="task-del" onclick="deleteTask('${p.id}','${t.id}')" title="Delete">×</button>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  html += `<div class="add-task-row"><button class="add-task-btn" onclick="addTask('${p.id}')">+ Add task</button></div></div>`;
+  return html;
+}
+
+function setMgmtTab(id) { activeMgmtTab = id; drawManagement(); }
+
+async function moveProject(id, dir) {
+  const idx = projectsData.findIndex(p => p.id === id);
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= projectsData.length) return;
+  const tmpPos = projectsData[idx].position;
+  projectsData[idx].position = projectsData[swapIdx].position;
+  projectsData[swapIdx].position = tmpPos;
+  [projectsData[idx], projectsData[swapIdx]] = [projectsData[swapIdx], projectsData[idx]];
+  await Promise.all([
+    supabase.from('projects').update({position: projectsData[idx].position}).eq('id', projectsData[idx].id),
+    supabase.from('projects').update({position: projectsData[swapIdx].position}).eq('id', projectsData[swapIdx].id),
+  ]);
+  drawManagement();
+}
+
 async function createProject() {
+  const maxPos = projectsData.length ? Math.max(...projectsData.map(p=>p.position||0))+1 : 0;
   const { data } = await supabase.from('projects').insert({
-    user_id: currentUser.id, name: 'New Project', objective: '', tasks: []
+    user_id: currentUser.id, name: 'New Project', objective: '', tasks: [], position: maxPos
   }).select().single();
-  if (data) { projectsData.unshift(data); drawManagement(); }
+  if (data) { projectsData.push(data); activeMgmtTab = data.id; drawManagement(); }
 }
 
 async function updateProject(id, field, value) {
   const idx = projectsData.findIndex(p => p.id === id);
   if (idx === -1) return;
   projectsData[idx][field] = value;
-  await supabase.from('projects').update({ [field]: value }).eq('id', id);
+  await supabase.from('projects').update({[field]: value}).eq('id', id);
+}
+
+async function updateProjectAndRedraw(id, field, value) {
+  await updateProject(id, field, value); drawManagement();
 }
 
 async function deleteProject(id) {
   if (!confirm('Delete this project and all its tasks?')) return;
   projectsData = projectsData.filter(p => p.id !== id);
+  activeMgmtTab = 'overview';
   await supabase.from('projects').delete().eq('id', id);
   drawManagement();
 }
@@ -1023,9 +1100,9 @@ async function deleteProject(id) {
 async function addTask(projectId) {
   const idx = projectsData.findIndex(p => p.id === projectId);
   if (idx === -1) return;
-  const task = { id: crypto.randomUUID(), title: '', completed: false, due_date: '' };
-  projectsData[idx].tasks = [...(projectsData[idx].tasks || []), task];
-  await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
+  const task = {id: crypto.randomUUID(), title: '', completed: false, due_date: ''};
+  projectsData[idx].tasks = [...(projectsData[idx].tasks||[]), task];
+  await supabase.from('projects').update({tasks: projectsData[idx].tasks}).eq('id', projectId);
   drawManagement();
 }
 
@@ -1035,7 +1112,7 @@ async function toggleTask(projectId, taskId, checked) {
   const ti = projectsData[idx].tasks.findIndex(t => t.id === taskId);
   if (ti === -1) return;
   projectsData[idx].tasks[ti].completed = checked;
-  await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
+  await supabase.from('projects').update({tasks: projectsData[idx].tasks}).eq('id', projectId);
   drawManagement();
 }
 
