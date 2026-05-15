@@ -601,6 +601,7 @@ async function handleRegister() {
 async function handleLogout() {
   await supabase.auth.signOut();
   currentUser = null; currentProfile = null; strategyData = null;
+  mfData = null; mfLoaded = false; mfMonth = null;
   showAuth('login');
 }
 
@@ -1608,17 +1609,27 @@ function exportICS() {
 // ═══════════════════════════════════════
 // MONEY FLOW
 // ═══════════════════════════════════════
-const MF_KEY = 'opb-money-flow-v4';
 let mfData = null;
 let mfTab = 'overview';
 let mfMonth = null;
+let mfLoaded = false;
+let mfSaveTimer = null;
 
-function mfLoad() {
+async function mfLoad() {
+  mfData = { months: {} };
   try {
-    const raw = localStorage.getItem(MF_KEY);
-    mfData = raw ? JSON.parse(raw) : { months: {} };
+    const { data } = await supabase.from('money_flow').select('*').eq('user_id', currentUser.id);
+    (data || []).forEach(row => {
+      const parse = v => Array.isArray(v) ? v : (typeof v === 'string' ? JSON.parse(v) : []);
+      mfData.months[row.month] = {
+        id: row.id,
+        revenue: parse(row.revenue),
+        fixedExpenses: parse(row.fixed_expenses),
+        variableExpenses: parse(row.variable_expenses),
+      };
+    });
   } catch(e) {
-    mfData = { months: {} };
+    console.error('mfLoad error:', e);
   }
   if (!mfMonth) {
     const now = new Date();
@@ -1627,8 +1638,29 @@ function mfLoad() {
   if (!mfData.months[mfMonth]) mfData.months[mfMonth] = { revenue: [], fixedExpenses: [], variableExpenses: [] };
 }
 
-function mfSave() {
-  localStorage.setItem(MF_KEY, JSON.stringify(mfData));
+function mfTriggerSave() {
+  clearTimeout(mfSaveTimer);
+  mfSaveTimer = setTimeout(() => mfSaveMonth(mfMonth), 800);
+}
+
+async function mfSaveMonth(month) {
+  const md = mfData?.months?.[month];
+  if (!md) return;
+  const payload = {
+    user_id: currentUser.id,
+    month,
+    revenue: md.revenue || [],
+    fixed_expenses: md.fixedExpenses || [],
+    variable_expenses: md.variableExpenses || [],
+  };
+  try {
+    const { data } = await supabase.from('money_flow')
+      .upsert(payload, { onConflict: 'user_id,month' })
+      .select('id').single();
+    if (data && !md.id) md.id = data.id;
+  } catch(e) {
+    console.error('mfSaveMonth error:', e);
+  }
 }
 
 function mfGetMonth(m) {
@@ -1673,9 +1705,13 @@ function mfFmt(n) {
   return (n < 0 ? '-' : '') + '€' + str;
 }
 
-function renderMoneyFlow() {
-  mfLoad();
+async function renderMoneyFlow() {
   const c = document.getElementById('view-moneyflow');
+  if (!mfLoaded) {
+    c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+    await mfLoad();
+    mfLoaded = true;
+  }
   const tabs = [
     { id:'overview',  label:'Overview' },
     { id:'revenue',   label:'Revenue' },
@@ -1984,7 +2020,7 @@ function mfAddRevenue() {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', amount: 0 });
-  mfSave(); mfTab = 'revenue'; renderMoneyFlow();
+  mfTriggerSave(); mfTab = 'revenue'; renderMoneyFlow();
 }
 
 function mfAddRevenueFromOffer(val) {
@@ -1994,7 +2030,7 @@ function mfAddRevenueFromOffer(val) {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: name||'', category: 'Service', amount: parseFloat(price)||0 });
-  mfSave(); mfTab = 'revenue'; renderMoneyFlow();
+  mfTriggerSave(); mfTab = 'revenue'; renderMoneyFlow();
 }
 
 function mfUpdateRevenue(id, field, value) {
@@ -2002,20 +2038,20 @@ function mfUpdateRevenue(id, field, value) {
   const r = md.revenue.find(r => r.id === id);
   if (!r) return;
   r[field] = field === 'amount' ? (parseFloat(value)||0) : value;
-  mfSave();
+  mfTriggerSave();
 }
 
 function mfDeleteRevenue(id) {
   const md = mfGetMonth(mfMonth);
   md.revenue = md.revenue.filter(r => r.id !== id);
-  mfSave(); renderMoneyFlow();
+  mfTriggerSave(); renderMoneyFlow();
 }
 
 // ── Fixed expenses CRUD ───────────────────
 function mfAddFixed() {
   const md = mfGetMonth(mfMonth);
   md.fixedExpenses.push({ id: crypto.randomUUID(), description: '', category: '', amount: 0 });
-  mfSave(); renderMoneyFlow();
+  mfTriggerSave(); renderMoneyFlow();
 }
 
 function mfUpdateFixed(id, field, value) {
@@ -2023,13 +2059,13 @@ function mfUpdateFixed(id, field, value) {
   const e = md.fixedExpenses.find(e => e.id === id);
   if (!e) return;
   e[field] = field === 'amount' ? (parseFloat(value)||0) : value;
-  mfSave();
+  mfTriggerSave();
 }
 
 function mfDeleteFixed(id) {
   const md = mfGetMonth(mfMonth);
   md.fixedExpenses = md.fixedExpenses.filter(e => e.id !== id);
-  mfSave(); renderMoneyFlow();
+  mfTriggerSave(); renderMoneyFlow();
 }
 
 // ── Variable expenses CRUD ────────────────
@@ -2038,7 +2074,7 @@ function mfAddVariable() {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   md.variableExpenses.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', amount: 0 });
-  mfSave(); renderMoneyFlow();
+  mfTriggerSave(); renderMoneyFlow();
 }
 
 function mfUpdateVariable(id, field, value) {
@@ -2046,13 +2082,13 @@ function mfUpdateVariable(id, field, value) {
   const e = md.variableExpenses.find(e => e.id === id);
   if (!e) return;
   e[field] = field === 'amount' ? (parseFloat(value)||0) : value;
-  mfSave();
+  mfTriggerSave();
 }
 
 function mfDeleteVariable(id) {
   const md = mfGetMonth(mfMonth);
   md.variableExpenses = md.variableExpenses.filter(e => e.id !== id);
-  mfSave(); renderMoneyFlow();
+  mfTriggerSave(); renderMoneyFlow();
 }
 
 // ── Duplicate & Export ────────────────────
@@ -2063,7 +2099,7 @@ function mfDuplicateMonth() {
   const current = mfGetMonth(mfMonth);
   const target = mfGetMonth(nextKey);
   target.fixedExpenses = current.fixedExpenses.map(e => ({...e, id: crypto.randomUUID()}));
-  mfSave();
+  mfSaveMonth(nextKey);
   if (confirm(`Fixed expenses copied to ${mfFormatMonth(nextKey)}.\n\nGo to that month now?`)) {
     mfMonth = nextKey;
     renderMoneyFlow();

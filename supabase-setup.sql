@@ -215,3 +215,29 @@ CREATE POLICY "Admin manages own appointments"
   ON appointments FOR ALL
   USING (auth.uid() = admin_id)
   WITH CHECK (auth.uid() = admin_id);
+
+-- 11. Money Flow table (one row per user per month)
+CREATE TABLE IF NOT EXISTS money_flow (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  month TEXT NOT NULL,
+  revenue JSONB DEFAULT '[]'::jsonb,
+  fixed_expenses JSONB DEFAULT '[]'::jsonb,
+  variable_expenses JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, month)
+);
+
+ALTER TABLE money_flow ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own money flow" ON money_flow;
+CREATE POLICY "Users can manage own money flow"
+  ON money_flow FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS money_flow_updated_at ON money_flow;
+CREATE TRIGGER money_flow_updated_at
+  BEFORE UPDATE ON money_flow
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
