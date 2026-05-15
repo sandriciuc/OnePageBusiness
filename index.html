@@ -902,6 +902,101 @@ function deleteOffer(id) {
 }
 
 // ═══════════════════════════════════════
+// FUNNEL BUILDER
+// ═══════════════════════════════════════
+const FUNNEL_COLORS = ['#3D5A4C','#C4873A','#4A90D9','#8E6BBF','#B89A6E','#888888'];
+
+function renderFunnelBody() {
+  const blocks = strategyData?.funnel_data || [];
+  if (!blocks.length) {
+    return `<p style="font-size:13px;color:var(--ink-mute);margin-bottom:12px;">No steps yet. Build your funnel below.</p>
+    <div class="funnel-map"><button class="funnel-add-btn" onclick="addFunnelBlock()">+ Add first step</button></div>`;
+  }
+  let html = '<div class="funnel-map">';
+  blocks.forEach((b, i) => {
+    const color = b.color || FUNNEL_COLORS[i % FUNNEL_COLORS.length];
+    const colorDots = FUNNEL_COLORS.map(c =>
+      `<span class="funnel-color-dot${b.color===c?' active':''}" style="background:${c};" onclick="updateFunnelBlock('${b.id}','color','${c}')"></span>`
+    ).join('');
+    html += `<div class="funnel-block-wrap">
+      <div class="funnel-block" style="border-left:4px solid ${color};">
+        <div class="funnel-block-header" style="background:${color}18;">
+          <div class="funnel-block-num" style="background:${color};">${i+1}</div>
+          <input class="funnel-stage-input" value="${escHtml(b.label||'')}" placeholder="Stage name (e.g. Awareness)"
+            onblur="updateFunnelBlock('${b.id}','label',this.value)">
+          <div class="funnel-color-dots">${colorDots}</div>
+          <button class="funnel-move-btn" onclick="moveFunnelBlock('${b.id}',-1)" ${i===0?'disabled':''} title="Move up">▲</button>
+          <button class="funnel-move-btn" onclick="moveFunnelBlock('${b.id}',1)" ${i===blocks.length-1?'disabled':''} title="Move down">▼</button>
+          <button class="funnel-del-btn" onclick="deleteFunnelBlock('${b.id}')" title="Remove">×</button>
+        </div>
+        <div class="funnel-block-body">
+          <div class="funnel-field-row">
+            <span class="funnel-field-label">Action / Description</span>
+            <textarea class="funnel-field-input funnel-field-textarea" placeholder="What happens at this stage?" onblur="updateFunnelBlock('${b.id}','action',this.value)">${escHtml(b.action||'')}</textarea>
+          </div>
+          <div class="funnel-field-row">
+            <span class="funnel-field-label">Offer / Product</span>
+            <input class="funnel-field-input" value="${escHtml(b.offer||'')}" placeholder="e.g. Free checklist" onblur="updateFunnelBlock('${b.id}','offer',this.value)">
+            <span class="funnel-field-label" style="margin-top:6px;">Channel</span>
+            <input class="funnel-field-input" value="${escHtml(b.channel||'')}" placeholder="e.g. Instagram, Email" onblur="updateFunnelBlock('${b.id}','channel',this.value)">
+          </div>
+        </div>
+      </div>
+    </div>`;
+    if (i < blocks.length - 1) {
+      html += `<div class="funnel-connector"><div class="funnel-connector-line"></div><div class="funnel-connector-arrow"></div></div>`;
+    }
+  });
+  html += `<button class="funnel-add-btn" onclick="addFunnelBlock()">+ Add step</button></div>`;
+  return html;
+}
+
+function addFunnelBlock() {
+  if (!strategyData.funnel_data) strategyData.funnel_data = [];
+  const i = strategyData.funnel_data.length;
+  strategyData.funnel_data.push({
+    id: crypto.randomUUID(), label: '', action: '', offer: '', channel: '',
+    color: FUNNEL_COLORS[i % FUNNEL_COLORS.length],
+  });
+  const body = document.getElementById('funnel-field-body');
+  if (body) body.innerHTML = renderFunnelBody();
+  const card = document.getElementById('funnel-field-card');
+  if (card) card.classList.add('filled','expanded');
+  triggerSave();
+}
+
+function updateFunnelBlock(id, field, value) {
+  const idx = (strategyData.funnel_data||[]).findIndex(b => b.id === id);
+  if (idx === -1) return;
+  strategyData.funnel_data[idx][field] = value;
+  if (field === 'color') {
+    const body = document.getElementById('funnel-field-body');
+    if (body) body.innerHTML = renderFunnelBody();
+  }
+  triggerSave();
+}
+
+function moveFunnelBlock(id, dir) {
+  const blocks = strategyData.funnel_data || [];
+  const idx = blocks.findIndex(b => b.id === id);
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= blocks.length) return;
+  [blocks[idx], blocks[swapIdx]] = [blocks[swapIdx], blocks[idx]];
+  const body = document.getElementById('funnel-field-body');
+  if (body) body.innerHTML = renderFunnelBody();
+  triggerSave();
+}
+
+function deleteFunnelBlock(id) {
+  strategyData.funnel_data = (strategyData.funnel_data||[]).filter(b => b.id !== id);
+  const body = document.getElementById('funnel-field-body');
+  if (body) body.innerHTML = renderFunnelBody();
+  const card = document.getElementById('funnel-field-card');
+  if (card && !strategyData.funnel_data.length) card.classList.remove('filled');
+  triggerSave();
+}
+
+// ═══════════════════════════════════════
 // RENDER FOUNDATION
 // ═══════════════════════════════════════
 function renderFoundation() {

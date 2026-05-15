@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS strategies (
 
 -- Add offers_data to existing strategies tables (safe if column already exists)
 ALTER TABLE strategies ADD COLUMN IF NOT EXISTS offers_data JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE strategies ADD COLUMN IF NOT EXISTS funnel_data JSONB DEFAULT '[]'::jsonb;
 
 -- 3. Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
