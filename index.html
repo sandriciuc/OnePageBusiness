@@ -1292,21 +1292,14 @@ async function deleteTask(projectId, taskId) {
 // ═══════════════════════════════════════
 // CALENDAR
 // ═══════════════════════════════════════
-let calServices = [];
 let calAppointments = [];
 let calCurrentDate = new Date();
-let calServicesOpen = false;
 
 async function renderCalendar() {
   const c = document.getElementById('view-calendar');
   c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
-  const [{ data: svc }, { data: appt }] = await Promise.all([
-    supabase.from('services').select('*').eq('admin_id', currentUser.id).order('created_at',{ascending:true}),
-    supabase.from('appointments').select('*').eq('admin_id', currentUser.id).order('start_at',{ascending:true})
-  ]);
-  calServices = svc || [];
+  const { data: appt } = await supabase.from('appointments').select('*').eq('admin_id', currentUser.id).order('start_at',{ascending:true});
   calAppointments = appt || [];
-  if (calServices.length === 0) calServicesOpen = true;
   drawCalendar();
 }
 
@@ -1315,7 +1308,9 @@ function drawCalendar() {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const year = calCurrentDate.getFullYear();
   const month = calCurrentDate.getMonth();
-  c.innerHTML = drawServicesPanel() + `
+  const offers = strategyData?.offers_data || [];
+  const noOffers = offers.length === 0;
+  c.innerHTML = (noOffers ? `<div style="background:rgba(196,135,58,0.08);border:1px solid rgba(196,135,58,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--amber);">No offers defined yet — add them in <strong>Clarity → Offers</strong> to use as appointment templates.</div>` : '') + `
     <div class="cal-header">
       <div class="cal-month-nav">
         <button class="cal-nav-btn" onclick="calPrevMonth()">←</button>
@@ -1324,33 +1319,6 @@ function drawCalendar() {
       </div>
       <button class="btn-outline" onclick="openApptModal(null,null)">+ New Appointment</button>
     </div>` + drawCalendarMonth();
-}
-
-function drawServicesPanel() {
-  let html = `<div class="services-panel">
-    <div class="services-panel-header" onclick="calServicesOpen=!calServicesOpen;drawCalendar()">
-      <span class="services-panel-title">Services &amp; Products</span>
-      <span style="color:var(--ink-mute);font-size:12px;">${calServicesOpen?'▲':'▼'}&nbsp;${calServices.length} service${calServices.length!==1?'s':''}</span>
-    </div>`;
-  if (calServicesOpen) {
-    html += '<div class="services-panel-body">';
-    if (!calServices.length) html += '<p style="font-size:13px;color:var(--ink-mute);margin-bottom:14px;">No services yet. Add your first one below.</p>';
-    calServices.forEach(s => {
-      html += `<div class="service-row">
-        <input class="service-name-input" value="${escHtml(s.name)}" placeholder="Service name"
-          onblur="updateService('${s.id}','name',this.value)">
-        <input class="service-small-input" type="number" value="${s.price}" placeholder="0" min="0" step="0.01"
-          onblur="updateService('${s.id}','price',this.value)">
-        <span class="service-input-label">€</span>
-        <input class="service-small-input" type="number" value="${s.duration_minutes}" placeholder="60" min="1"
-          onblur="updateService('${s.id}','duration_minutes',this.value)">
-        <span class="service-input-label">min</span>
-        <button class="task-del" onclick="deleteService('${s.id}')" title="Delete">×</button>
-      </div>`;
-    });
-    html += `<button class="add-task-btn" onclick="addService()">+ Add service</button></div>`;
-  }
-  return html + '</div>';
 }
 
 function drawCalendarMonth() {
@@ -1412,29 +1380,28 @@ function openApptModal(dateStr, apptId) {
     apptDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     apptTime = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   }
-  const serviceOpts = calServices.map(s =>
-    `<option value="${s.id}" data-price="${s.price}" data-dur="${s.duration_minutes}" data-name="${escHtml(s.name)}" ${appt?.service_id===s.id?'selected':''}>${escHtml(s.name)} — €${s.price} · ${s.duration_minutes}min</option>`
-  ).join('');
+  const offers = strategyData?.offers_data || [];
+  const offerOpts = offers.map(o => {
+    const tLabel = (OFFER_TYPES.find(x=>x.value===o.type)||{label:o.type}).label;
+    const sel = appt?.service_name === o.name ? 'selected' : '';
+    return `<option value="${escHtml(o.name)}" data-price="${o.price}" data-name="${escHtml(o.name)}" ${sel}>${escHtml(o.name)} — €${o.price} (${tLabel})</option>`;
+  }).join('');
   const modal = document.getElementById('calModal');
   modal.innerHTML = `<div class="cal-modal">
     <h3 class="cal-modal-title">${appt?'Edit Appointment':'New Appointment'}</h3>
     <div class="cal-form-row">
-      <div class="cal-form-group">
-        <label class="cal-form-label">Client Name</label>
-        <input class="cal-form-input" id="calClientName" value="${escHtml(appt?.client_name||'')}" placeholder="Client name">
-      </div>
-      <div class="cal-form-group">
-        <label class="cal-form-label">Client Email</label>
-        <input class="cal-form-input" id="calClientEmail" type="email" value="${escHtml(appt?.client_email||'')}" placeholder="email@example.com">
+      <div class="cal-form-group" style="flex:2;">
+        <label class="cal-form-label">Offer (from Clarity)</label>
+        <select class="cal-form-input cal-form-select" id="calOfferSel" onchange="calOfferChanged(this)">
+          <option value="">— Select offer or fill manually —</option>
+          ${offerOpts}
+        </select>
       </div>
     </div>
     <div class="cal-form-row">
-      <div class="cal-form-group">
-        <label class="cal-form-label">Service / Product</label>
-        <select class="cal-form-input cal-form-select" id="calServiceSel" onchange="calServiceChanged(this)">
-          <option value="">— No service selected —</option>
-          ${serviceOpts}
-        </select>
+      <div class="cal-form-group" style="flex:2;">
+        <label class="cal-form-label">Appointment Name</label>
+        <input class="cal-form-input" id="calApptName" value="${escHtml(appt?.service_name||'')}" placeholder="e.g. Strategy Session">
       </div>
     </div>
     <div class="cal-form-row">
@@ -1455,6 +1422,16 @@ function openApptModal(dateStr, apptId) {
       <div class="cal-form-group">
         <label class="cal-form-label">Time</label>
         <input class="cal-form-input" id="calTime" type="time" value="${apptTime}">
+      </div>
+    </div>
+    <div class="cal-form-row">
+      <div class="cal-form-group">
+        <label class="cal-form-label">Client Name</label>
+        <input class="cal-form-input" id="calClientName" value="${escHtml(appt?.client_name||'')}" placeholder="Client name">
+      </div>
+      <div class="cal-form-group">
+        <label class="cal-form-label">Client Email</label>
+        <input class="cal-form-input" id="calClientEmail" type="email" value="${escHtml(appt?.client_email||'')}" placeholder="email@example.com">
       </div>
     </div>
     ${appt?`<div class="cal-form-row"><div class="cal-form-group">
@@ -1484,11 +1461,11 @@ function openApptModal(dateStr, apptId) {
 
 function closeApptModal() { document.getElementById('calModal').classList.remove('open'); }
 
-function calServiceChanged(sel) {
+function calOfferChanged(sel) {
   const opt = sel.selectedOptions[0];
   if (opt?.value) {
+    document.getElementById('calApptName').value = opt.dataset.name || '';
     document.getElementById('calPrice').value = opt.dataset.price || '';
-    document.getElementById('calDuration').value = opt.dataset.dur || 60;
   }
 }
 
@@ -1496,14 +1473,12 @@ async function saveAppt(apptId) {
   const date = document.getElementById('calDate').value;
   const time = document.getElementById('calTime').value;
   if (!date || !time) { alert('Please set a date and time.'); return; }
-  const sel = document.getElementById('calServiceSel');
-  const serviceId = sel.value || null;
   const payload = {
     admin_id: currentUser.id,
     client_name: document.getElementById('calClientName').value.trim(),
     client_email: document.getElementById('calClientEmail').value.trim(),
-    service_id: serviceId,
-    service_name: serviceId ? (sel.selectedOptions[0]?.dataset?.name || '') : '',
+    service_id: null,
+    service_name: document.getElementById('calApptName').value.trim(),
     price: parseFloat(document.getElementById('calPrice').value) || 0,
     duration_minutes: parseInt(document.getElementById('calDuration').value) || 60,
     start_at: new Date(`${date}T${time}`).toISOString(),
@@ -1527,28 +1502,6 @@ async function deleteAppt(id) {
   await supabase.from('appointments').delete().eq('id', id);
   calAppointments = calAppointments.filter(a => a.id !== id);
   closeApptModal();
-  drawCalendar();
-}
-
-async function addService() {
-  const { data } = await supabase.from('services').insert({
-    admin_id: currentUser.id, name: 'New Service', price: 0, duration_minutes: 60
-  }).select().single();
-  if (data) { calServices.push(data); calServicesOpen = true; drawCalendar(); }
-}
-
-async function updateService(id, field, value) {
-  const idx = calServices.findIndex(s => s.id === id);
-  if (idx === -1) return;
-  const val = field==='price' ? parseFloat(value)||0 : field==='duration_minutes' ? parseInt(value)||60 : value;
-  calServices[idx][field] = val;
-  await supabase.from('services').update({[field]: val}).eq('id', id);
-}
-
-async function deleteService(id) {
-  if (!confirm('Delete this service?')) return;
-  calServices = calServices.filter(s => s.id !== id);
-  await supabase.from('services').delete().eq('id', id);
   drawCalendar();
 }
 
