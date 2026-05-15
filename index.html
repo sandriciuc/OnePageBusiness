@@ -2283,11 +2283,15 @@ function mfRenderRevenue(monthData) {
         <td><input type="text" class="mf-inline-input" value="${escHtml(r.category||'')}" placeholder="Category" onblur="mfUpdateRevenue('${r.id}','category',this.value)"></td>
         <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateRevenue('${r.id}','qty',this.value)"></td>
         <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateRevenue('${r.id}','unitPrice',this.value)"></td>
-        <td style="text-align:right;font-weight:600;color:var(--green);white-space:nowrap;">${mfFmt(total)}</td>
+        <td id="mf-rtotal-${r.id}" style="text-align:right;font-weight:600;color:var(--green);white-space:nowrap;">${mfFmt(total)}</td>
         <td><button class="task-del" onclick="mfDeleteRevenue('${r.id}')">×</button></td>
       </tr>`;
     });
-    html += '</tbody></table></div>';
+    html += `</tbody><tfoot><tr style="background:rgba(61,90,76,0.05);border-top:2px solid var(--cream-dark);">
+      <td colspan="5" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
+      <td id="mf-rev-mtotal" style="text-align:right;padding:9px 14px;font-weight:700;color:var(--green);">${mfFmt(total)}</td>
+      <td></td>
+    </tr></tfoot></table></div>`;
   }
   return html;
 }
@@ -2322,11 +2326,15 @@ function mfRenderExpenses(monthData) {
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateFixed('${e.id}','category',this.value)"></td>
         <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateFixed('${e.id}','qty',this.value)"></td>
         <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateFixed('${e.id}','unitPrice',this.value)"></td>
-        <td style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
+        <td id="mf-ftotal-${e.id}" style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
         <td><button class="task-del" onclick="mfDeleteFixed('${e.id}')">×</button></td>
       </tr>`;
     });
-    html += '</tbody></table></div>';
+    html += `</tbody><tfoot><tr style="background:rgba(61,90,76,0.05);border-top:2px solid var(--cream-dark);">
+      <td colspan="4" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
+      <td id="mf-fixed-mtotal" style="text-align:right;padding:9px 14px;font-weight:700;color:var(--amber);">${mfFmt(totalFixed)}</td>
+      <td></td>
+    </tr></tfoot></table></div>`;
   }
 
   html += `
@@ -2354,11 +2362,15 @@ function mfRenderExpenses(monthData) {
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateVariable('${e.id}','category',this.value)"></td>
         <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateVariable('${e.id}','qty',this.value)"></td>
         <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateVariable('${e.id}','unitPrice',this.value)"></td>
-        <td style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
+        <td id="mf-vtotal-${e.id}" style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
         <td><button class="task-del" onclick="mfDeleteVariable('${e.id}')">×</button></td>
       </tr>`;
     });
-    html += '</tbody></table></div>';
+    html += `</tbody><tfoot><tr style="background:rgba(61,90,76,0.05);border-top:2px solid var(--cream-dark);">
+      <td colspan="5" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
+      <td id="mf-var-mtotal" style="text-align:right;padding:9px 14px;font-weight:700;color:var(--amber);">${mfFmt(totalVar)}</td>
+      <td></td>
+    </tr></tfoot></table></div>`;
   }
   return html;
 }
@@ -2469,7 +2481,13 @@ function mfUpdateRevenue(id, field, value) {
     r.amount = r.qty * r.unitPrice;
   } else {
     r[field] = value;
+    mfTriggerSave();
+    return;
   }
+  const rc = document.getElementById('mf-rtotal-' + id);
+  if (rc) rc.textContent = mfFmt(r.amount);
+  const mc = document.getElementById('mf-rev-mtotal');
+  if (mc) mc.textContent = mfFmt(md.revenue.reduce((s,x)=>s+(parseFloat(x.amount)||0),0));
   mfTriggerSave();
 }
 
@@ -2500,7 +2518,13 @@ function mfUpdateFixed(id, field, value) {
     e.amount = e.qty * e.unitPrice;
   } else {
     e[field] = value;
+    mfTriggerSave();
+    return;
   }
+  const rc = document.getElementById('mf-ftotal-' + id);
+  if (rc) rc.textContent = mfFmt(e.amount);
+  const mc = document.getElementById('mf-fixed-mtotal');
+  if (mc) mc.textContent = mfFmt(md.fixedExpenses.reduce((s,x)=>s+(parseFloat(x.amount)||0),0));
   mfTriggerSave();
 }
 
@@ -2533,7 +2557,13 @@ function mfUpdateVariable(id, field, value) {
     e.amount = e.qty * e.unitPrice;
   } else {
     e[field] = value;
+    mfTriggerSave();
+    return;
   }
+  const rc = document.getElementById('mf-vtotal-' + id);
+  if (rc) rc.textContent = mfFmt(e.amount);
+  const mc = document.getElementById('mf-var-mtotal');
+  if (mc) mc.textContent = mfFmt(md.variableExpenses.reduce((s,x)=>s+(parseFloat(x.amount)||0),0));
   mfTriggerSave();
 }
 
