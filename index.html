@@ -345,6 +345,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .op-focus-meta{font-size:11px;color:var(--ink-mute);white-space:nowrap;}
 .op-focus-empty{font-size:13px;color:var(--ink-mute);padding:8px 0;font-style:italic;}
 @media(max-width:600px){.op-focus-grid{grid-template-columns:1fr;}}
+.op-leads-input{width:46px;border:1px solid var(--cream-dark);border-radius:4px;padding:3px 5px;font-size:11px;text-align:center;background:var(--cream);color:var(--ink);font-family:inherit;}
+.op-leads-input:focus{outline:none;border-color:var(--amber);}
+.op-add-product-bar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--cream);border-top:1px solid var(--cream-dark);border-radius:0 0 12px 12px;}
+.op-remove-btn{background:none;border:none;cursor:pointer;color:var(--ink-mute);font-size:14px;line-height:1;padding:0 0 0 6px;opacity:0.5;vertical-align:middle;}
+.op-remove-btn:hover{opacity:1;color:var(--red);}
 
 /* ═══ FUNNEL BUILDER ═══ */
 .funnel-map{display:flex;flex-direction:column;align-items:center;padding:4px 0 8px;}
@@ -693,8 +698,9 @@ async function initApp(user) {
       strategyData.kpis = { ...defaultKpis, ...strat.kpis };
       strategyData.offers_data = strat.offers_data ? (typeof strat.offers_data === 'string' ? JSON.parse(strat.offers_data) : strat.offers_data) : [];
       strategyData.funnel_data = strat.funnel_data ? (typeof strat.funnel_data === 'string' ? JSON.parse(strat.funnel_data) : strat.funnel_data) : [];
+      strategyData.dashboard_products = strat.dashboard_products ? (typeof strat.dashboard_products === 'string' ? JSON.parse(strat.dashboard_products) : strat.dashboard_products) : [];
     } else {
-      strategyData = { kpis: {...defaultKpis}, offers_data: [] };
+      strategyData = { kpis: {...defaultKpis}, offers_data: [], dashboard_products: [] };
       allTextFields.forEach(f => { if (f.col) strategyData[f.col] = ''; });
     }
 
@@ -815,6 +821,7 @@ function triggerSave() {
     updateObj.funnel_architecture = (strategyData.funnel_data||[]).map((b,i) =>
       `${i+1}. ${b.label||'Step'}${b.offer?' → '+b.offer:''}${b.channel?' ['+b.channel+']':''}${b.action?'\n   '+b.action:''}`
     ).join('\n');
+    updateObj.dashboard_products = strategyData.dashboard_products || [];
 
     await supabase.from('strategies').update(updateObj).eq('id', strategyId);
     
@@ -1150,14 +1157,9 @@ function renderKPIs() {
 // ═══════════════════════════════════════
 // RENDER DASHBOARD
 // ═══════════════════════════════════════
-function getLastNMonths(n) {
-  const months = [];
-  const now = new Date();
-  for (let i = n-1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-  }
-  return months;
+function get2026Months() {
+  return ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06',
+          '2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'];
 }
 
 function getWeekStart() {
@@ -1174,7 +1176,7 @@ async function renderDashboard() {
   if (!strategyData) { c.innerHTML = '<p style="color:#999;">Loading...</p>'; return; }
   c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
 
-  const months = getLastNMonths(6);
+  const months = get2026Months();
 
   // Fetch Money Flow rows
   let mfRows = {};
@@ -1182,7 +1184,8 @@ async function renderDashboard() {
     const { data } = await supabase.from('money_flow').select('*').eq('user_id', currentUser.id).in('month', months);
     (data||[]).forEach(row => {
       const p = v => Array.isArray(v) ? v : (typeof v === 'string' ? JSON.parse(v) : []);
-      mfRows[row.month] = { revenue: p(row.revenue), fixedExpenses: p(row.fixed_expenses), variableExpenses: p(row.variable_expenses) };
+      const extras = row.extras ? (typeof row.extras === 'string' ? JSON.parse(row.extras) : row.extras) : {};
+      mfRows[row.month] = { revenue: p(row.revenue), fixedExpenses: p(row.fixed_expenses), variableExpenses: p(row.variable_expenses), extras };
     });
   } catch(e) {}
 
@@ -1217,8 +1220,10 @@ async function renderDashboard() {
 function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
   const kpis = strategyData?.kpis || defaultKpis;
   const offers = strategyData?.offers_data || [];
+  const dashProducts = strategyData?.dashboard_products || [];
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const revGoal = parseFloat(kpis.revenue?.target) || 0;
+  const leadsGoal = parseFloat(kpis.leads?.target) || 0;
 
   const fmt = n => {
     const v = parseFloat(n)||0;
@@ -1227,15 +1232,16 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
     return (v < 0 ? '-' : '') + '€' + s;
   };
 
-  // ── Financial table columns ────────────────────────
+  const shortLabel = m => MONTHS_SHORT[parseInt(m.split('-')[1],10)-1];
+
+  // ── Financial table ──────────────────────────────────
   let totRevGoal=0, totRevActual=0, totExp=0;
   const mfCols = months.map(m => {
     const md = mfRows[m] || {};
     const rev = (md.revenue||[]).reduce((s,r)=>s+(parseFloat(r.amount)||0), 0);
     const exp = [...(md.fixedExpenses||[]),...(md.variableExpenses||[])].reduce((s,e)=>s+(parseFloat(e.amount)||0), 0);
-    const [y, mo] = m.split('-').map(Number);
     totRevGoal += revGoal; totRevActual += rev; totExp += exp;
-    return { label:`${MONTHS_SHORT[mo-1]} '${String(y).slice(2)}`, rev, exp, profit:rev-exp, hasData:rev>0||exp>0 };
+    return { m, label: shortLabel(m), rev, exp, profit: rev-exp, hasData: rev>0||exp>0 };
   });
   const totProfit = totRevActual - totExp;
 
@@ -1245,13 +1251,39 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
     return `<td style="${color?'color:'+color+';font-weight:500;':''}">${fmt(val)}</td>`;
   };
 
+  const thMonths = months.map(m=>`<th>${shortLabel(m)}</th>`).join('');
+
+  // ── Marketing/Sales table ────────────────────────────
+  let totLeadsGoal=0, totLeadsActual=0;
+  const leadsCols = months.map(m => {
+    const actual = parseFloat(mfRows[m]?.extras?.leads) || 0;
+    totLeadsGoal += leadsGoal;
+    totLeadsActual += actual;
+    return { m, actual };
+  });
+
+  const selectedOffers = offers.filter(o => dashProducts.includes(o.id));
+  const availableOffers = offers.filter(o => !dashProducts.includes(o.id));
+
+  const productRows = selectedOffers.map(o => {
+    let total = 0;
+    const cols = months.map(m => {
+      const entries = (mfRows[m]?.revenue||[]).filter(r => r.description === (o.name||''));
+      const count = entries.length;
+      const rev = entries.reduce((s,r)=>s+(parseFloat(r.amount)||0), 0);
+      total += count;
+      return { count, rev };
+    });
+    return { o, cols, total };
+  });
+
   let html = `
   <div class="op-section-title">Financial Overview</div>
   <div class="op-table-wrap">
   <table class="op-table">
     <thead><tr>
       <th class="op-row-label"></th>
-      ${mfCols.map(c=>`<th>${c.label}</th>`).join('')}
+      ${thMonths}
       <th class="op-total-col">Total</th>
     </tr></thead>
     <tbody>
@@ -1284,28 +1316,36 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
   <table class="op-table">
     <thead><tr>
       <th class="op-row-label"></th>
-      <th>Goal</th>
-      <th>Actual (6 mo)</th>
+      ${thMonths}
+      <th class="op-total-col">Total</th>
     </tr></thead>
     <tbody>
       <tr class="op-row-muted">
-        <td class="op-row-label">Leads</td>
-        <td>${kpis.leads?.target||'—'}</td>
-        <td style="${kpis.leads?.current&&kpis.leads?.target?(parseFloat(kpis.leads.current)>=parseFloat(kpis.leads.target)?'color:var(--green);':'color:var(--amber);'):''}">${kpis.leads?.current||'—'}</td>
+        <td class="op-row-label">Leads Goal</td>
+        ${months.map(()=>`<td>${leadsGoal||'—'}</td>`).join('')}
+        <td class="op-total-col">${leadsGoal?totLeadsGoal:'—'}</td>
       </tr>
-      ${offers.map(o => {
-        let count=0, rev=0;
-        Object.values(mfRows).forEach(md => {
-          (md.revenue||[]).forEach(r => { if(r.description===o.name){count++;rev+=parseFloat(r.amount)||0;} });
-        });
-        return `<tr>
-          <td class="op-row-label">${escHtml(o.name||'Unnamed')}<span class="op-price-tag">€${o.price}</span></td>
-          <td>—</td>
-          <td>${count>0?`<strong>${count}</strong> sales · ${fmt(rev)}`:'—'}</td>
-        </tr>`;
-      }).join('')}
+      <tr>
+        <td class="op-row-label">Leads Actual</td>
+        ${leadsCols.map(c=>`<td><input class="op-leads-input" type="number" min="0" value="${c.actual||''}" placeholder="—" onchange="dashUpdateLeads('${c.m}',this.value)"></td>`).join('')}
+        <td class="op-total-col" style="font-weight:600;">${totLeadsActual||'—'}</td>
+      </tr>
+      ${productRows.map(pr=>`<tr>
+        <td class="op-row-label">${escHtml(pr.o.name||'Unnamed')}<button class="op-remove-btn" onclick="dashRemoveProduct('${pr.o.id}')" title="Remove from dashboard">×</button></td>
+        ${pr.cols.map(c=>c.count>0?`<td><strong>${c.count}</strong><br><span style="font-size:10px;color:var(--ink-mute);">${fmt(c.rev)}</span></td>`:`<td class="op-cell-empty">—</td>`).join('')}
+        <td class="op-total-col" style="font-weight:600;">${pr.total>0?pr.total:'—'}</td>
+      </tr>`).join('')}
     </tbody>
   </table>
+  <div class="op-add-product-bar">
+    ${availableOffers.length ? `
+      <select id="dash-product-sel" class="field-input" style="flex:1;max-width:240px;padding:5px 10px;font-size:12px;">
+        <option value="">— select product to track —</option>
+        ${availableOffers.map(o=>`<option value="${escHtml(o.id)}">${escHtml(o.name||'Unnamed')}</option>`).join('')}
+      </select>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="dashAddProduct()">+ Add Row</button>
+    ` : offers.length ? `<span style="font-size:12px;color:var(--ink-mute);">All products are tracked.</span>` : `<span style="font-size:12px;color:var(--ink-mute);">No products defined yet — add offers in Clarity first.</span>`}
+  </div>
   </div>
 
   <div class="op-section-title">Current Focus</div>
@@ -1335,6 +1375,41 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
   `;
 
   return html;
+}
+
+function dashAddProduct() {
+  const sel = document.getElementById('dash-product-sel');
+  if (!sel || !sel.value) return;
+  const id = sel.value;
+  if (!strategyData.dashboard_products) strategyData.dashboard_products = [];
+  if (!strategyData.dashboard_products.includes(id)) {
+    strategyData.dashboard_products.push(id);
+    triggerSave();
+    renderDashboard();
+  }
+}
+
+function dashRemoveProduct(id) {
+  strategyData.dashboard_products = (strategyData.dashboard_products || []).filter(p => p !== id);
+  triggerSave();
+  renderDashboard();
+}
+
+async function dashUpdateLeads(month, val) {
+  const leads = parseInt(val) || 0;
+  try {
+    const { data: existing } = await supabase.from('money_flow')
+      .select('id,extras').eq('user_id', currentUser.id).eq('month', month).maybeSingle();
+    if (existing) {
+      const newExtras = { ...(existing.extras || {}), leads };
+      await supabase.from('money_flow').update({ extras: newExtras }).eq('id', existing.id);
+    } else {
+      await supabase.from('money_flow').insert({
+        user_id: currentUser.id, month, extras: { leads },
+        revenue: [], fixed_expenses: [], variable_expenses: []
+      });
+    }
+  } catch(e) { console.error('dashUpdateLeads:', e); }
 }
 
 // ═══════════════════════════════════════
@@ -1431,6 +1506,7 @@ async function viewClient(userId) {
   if (typeof strat.kpis === 'string') strat.kpis = JSON.parse(strat.kpis);
   strategyData.kpis = { ...defaultKpis, ...strat.kpis };
   strategyData.offers_data = strat.offers_data ? (typeof strat.offers_data === 'string' ? JSON.parse(strat.offers_data) : strat.offers_data) : [];
+  strategyData.dashboard_products = strat.dashboard_products ? (typeof strat.dashboard_products === 'string' ? JSON.parse(strat.dashboard_products) : strat.dashboard_products) : [];
   isViewingClient = true;
   viewingClientName = profile?.full_name || profile?.email || 'Client';
 

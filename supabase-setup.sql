@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS strategies (
 -- Add offers_data to existing strategies tables (safe if column already exists)
 ALTER TABLE strategies ADD COLUMN IF NOT EXISTS offers_data JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE strategies ADD COLUMN IF NOT EXISTS funnel_data JSONB DEFAULT '[]'::jsonb;
+ALTER TABLE strategies ADD COLUMN IF NOT EXISTS dashboard_products JSONB DEFAULT '[]'::jsonb;
 
 -- 3. Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
@@ -242,3 +243,6 @@ DROP TRIGGER IF EXISTS money_flow_updated_at ON money_flow;
 CREATE TRIGGER money_flow_updated_at
   BEFORE UPDATE ON money_flow
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Add extras column to money_flow for per-month metadata (e.g. leads count)
+ALTER TABLE money_flow ADD COLUMN IF NOT EXISTS extras JSONB DEFAULT '{}'::jsonb;
