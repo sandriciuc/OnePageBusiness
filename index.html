@@ -1262,10 +1262,15 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
     return { m, actual };
   });
 
-  const selectedOffers = offers.filter(o => dashProducts.includes(o.id));
-  const availableOffers = offers.filter(o => !dashProducts.includes(o.id));
+  // Normalize dashboard_products to [{id, goal}] (handles old string-array format)
+  const normDP = dashProducts.map(p => typeof p === 'string' ? {id: p, goal: 0} : p);
+  const trackedIds = new Set(normDP.map(p => p.id));
+
+  const selectedOffers = offers.filter(o => trackedIds.has(o.id));
+  const availableOffers = offers.filter(o => !trackedIds.has(o.id));
 
   const productRows = selectedOffers.map(o => {
+    const dpEntry = normDP.find(p => p.id === o.id) || {id: o.id, goal: 0};
     let total = 0;
     const cols = months.map(m => {
       const entries = (mfRows[m]?.revenue||[]).filter(r => r.description === (o.name||''));
@@ -1274,7 +1279,7 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
       total += count;
       return { count, rev };
     });
-    return { o, cols, total };
+    return { o, dpEntry, cols, total };
   });
 
   let html = `
@@ -1330,8 +1335,14 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
         ${leadsCols.map(c=>`<td><input class="op-leads-input" type="number" min="0" value="${c.actual||''}" placeholder="—" onchange="dashUpdateLeads('${c.m}',this.value)"></td>`).join('')}
         <td class="op-total-col" style="font-weight:600;">${totLeadsActual||'—'}</td>
       </tr>
-      ${productRows.map(pr=>`<tr>
-        <td class="op-row-label">${escHtml(pr.o.name||'Unnamed')}<button class="op-remove-btn" onclick="dashRemoveProduct('${pr.o.id}')" title="Remove from dashboard">×</button></td>
+      ${productRows.map(pr=>`
+      <tr class="op-row-muted">
+        <td class="op-row-label" style="font-size:12px;"><strong>${escHtml(pr.o.name||'Unnamed')}</strong> <span style="font-weight:400;color:var(--ink-mute);">— Goal</span></td>
+        ${months.map(()=>`<td><input class="op-leads-input op-goal-input-${pr.o.id}" type="number" min="0" value="${pr.dpEntry.goal||''}" placeholder="—" onchange="dashUpdateProductGoal('${pr.o.id}',this.value)"></td>`).join('')}
+        <td class="op-total-col op-goal-total-${pr.o.id}" style="color:var(--ink-mute);">${pr.dpEntry.goal ? pr.dpEntry.goal * 12 : '—'}</td>
+      </tr>
+      <tr>
+        <td class="op-row-label" style="font-size:12px;"><strong>${escHtml(pr.o.name||'Unnamed')}</strong> <span style="font-weight:400;color:var(--ink-mute);">— Actual</span><button class="op-remove-btn" onclick="dashRemoveProduct('${pr.o.id}')" title="Remove from dashboard">×</button></td>
         ${pr.cols.map(c=>c.count>0?`<td><strong>${c.count}</strong><br><span style="font-size:10px;color:var(--ink-mute);">${fmt(c.rev)}</span></td>`:`<td class="op-cell-empty">—</td>`).join('')}
         <td class="op-total-col" style="font-weight:600;">${pr.total>0?pr.total:'—'}</td>
       </tr>`).join('')}
@@ -1382,17 +1393,33 @@ function dashAddProduct() {
   if (!sel || !sel.value) return;
   const id = sel.value;
   if (!strategyData.dashboard_products) strategyData.dashboard_products = [];
-  if (!strategyData.dashboard_products.includes(id)) {
-    strategyData.dashboard_products.push(id);
+  const dp = strategyData.dashboard_products.map(p => typeof p === 'string' ? {id: p, goal: 0} : p);
+  if (!dp.some(p => p.id === id)) {
+    dp.push({id, goal: 0});
+    strategyData.dashboard_products = dp;
     triggerSave();
     renderDashboard();
   }
 }
 
 function dashRemoveProduct(id) {
-  strategyData.dashboard_products = (strategyData.dashboard_products || []).filter(p => p !== id);
+  const dp = (strategyData.dashboard_products || []).map(p => typeof p === 'string' ? {id: p, goal: 0} : p);
+  strategyData.dashboard_products = dp.filter(p => p.id !== id);
   triggerSave();
   renderDashboard();
+}
+
+function dashUpdateProductGoal(id, val) {
+  const goal = parseInt(val) || 0;
+  const dp = (strategyData.dashboard_products || []).map(p => typeof p === 'string' ? {id: p, goal: 0} : p);
+  const entry = dp.find(p => p.id === id);
+  if (entry) {
+    entry.goal = goal;
+    strategyData.dashboard_products = dp;
+    document.querySelectorAll(`.op-goal-input-${id}`).forEach(inp => { inp.value = goal || ''; });
+    document.querySelectorAll(`.op-goal-total-${id}`).forEach(cell => { cell.textContent = goal ? goal * 12 : '—'; });
+    triggerSave();
+  }
 }
 
 async function dashUpdateLeads(month, val) {
