@@ -223,6 +223,51 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .upcoming-date{font-size:11px;color:var(--ink-mute);white-space:nowrap;text-align:right;}
 .upcoming-date.warn-date{color:#C4873A;font-weight:500;}
 
+/* ═══ CALENDAR ═══ */
+.services-panel{background:var(--white);border:1px solid var(--cream-dark);border-radius:12px;margin-bottom:20px;overflow:hidden;}
+.services-panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;user-select:none;transition:background 0.15s;}
+.services-panel-header:hover{background:rgba(61,90,76,0.03);}
+.services-panel-title{font-size:12px;font-weight:600;color:var(--ink);letter-spacing:0.08em;text-transform:uppercase;}
+.services-panel-body{border-top:1px solid var(--cream-dark);padding:16px 20px;}
+.service-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+.service-name-input{flex:2;min-width:140px;border:1px solid var(--cream-dark);border-radius:6px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.2s;}
+.service-name-input:focus{border-color:var(--green);background:var(--white);}
+.service-small-input{width:80px;border:1px solid var(--cream-dark);border-radius:6px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.2s;}
+.service-small-input:focus{border-color:var(--green);background:var(--white);}
+.service-input-label{font-size:11px;color:var(--ink-mute);white-space:nowrap;}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.cal-month-nav{display:flex;align-items:center;gap:10px;}
+.cal-month-label{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--ink);min-width:180px;text-align:center;}
+.cal-nav-btn{background:transparent;border:1px solid var(--cream-dark);border-radius:6px;padding:6px 14px;cursor:pointer;color:var(--ink-soft);font-size:16px;line-height:1;transition:all 0.2s;}
+.cal-nav-btn:hover{border-color:var(--green);color:var(--green);}
+.cal-grid{background:var(--white);border:1px solid var(--cream-dark);border-radius:12px;overflow:hidden;}
+.cal-grid-header{display:grid;grid-template-columns:repeat(7,1fr);background:var(--cream);border-bottom:1px solid var(--cream-dark);}
+.cal-grid-dow{padding:10px 8px;text-align:center;font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);}
+.cal-grid-body{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-cell{min-height:90px;padding:6px 8px;border-right:1px solid var(--cream-dark);border-bottom:1px solid var(--cream-dark);cursor:pointer;transition:background 0.15s;position:relative;overflow:hidden;}
+.cal-cell:nth-child(7n){border-right:none;}
+.cal-cell:hover{background:rgba(61,90,76,0.03);}
+.cal-cell.other-month .cal-day-num{color:#ccc;}
+.cal-cell.today .cal-day-num{background:var(--green);color:var(--white);border-radius:50%;}
+.cal-day-num{font-size:12px;font-weight:500;color:var(--ink-soft);width:22px;height:22px;display:flex;align-items:center;justify-content:center;margin-bottom:3px;}
+.cal-appt{background:var(--green);color:var(--white);border-radius:4px;padding:2px 5px;font-size:10px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity 0.15s;display:block;}
+.cal-appt:hover{opacity:0.82;}
+.cal-appt.cancelled{background:#bbb;}
+.cal-appt.completed{background:var(--bronze);}
+.cal-new-btn{display:none;position:absolute;bottom:4px;right:5px;background:none;border:none;color:var(--green);cursor:pointer;font-size:20px;line-height:1;padding:0;font-weight:300;}
+.cal-cell:hover .cal-new-btn{display:block;}
+.cal-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.cal-modal-overlay.open{display:flex;}
+.cal-modal{background:var(--white);border-radius:16px;padding:28px 30px;width:100%;max-width:500px;box-shadow:0 16px 60px rgba(0,0,0,0.18);max-height:90vh;overflow-y:auto;}
+.cal-modal-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--ink);margin-bottom:20px;}
+.cal-form-row{display:flex;gap:12px;margin-bottom:14px;}
+.cal-form-group{flex:1;display:flex;flex-direction:column;gap:5px;}
+.cal-form-label{font-size:10px;font-weight:600;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.08em;}
+.cal-form-input{border:1px solid var(--cream-dark);border-radius:8px;padding:9px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.2s;width:100%;}
+.cal-form-input:focus{border-color:var(--green);background:var(--white);}
+.cal-form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer;}
+.cal-modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end;align-items:center;flex-wrap:wrap;}
+
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .animate-in{animation:fadeIn 0.3s ease forwards;}
 
@@ -230,6 +275,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
   .header{padding:12px 16px;}.header-left h1{font-size:17px;}.main{padding:20px 14px 50px;}
   .strategy-grid,.kpi-grid{grid-template-columns:1fr;}.kpi-summary-card{flex:1 1 80px;padding:10px 12px;}
   .kpi-summary-num{font-size:22px;}.auth-card{padding:32px 24px;}.header-btn{font-size:10px;padding:5px 10px;}
+  .cal-grid-dow{padding:6px 2px;font-size:9px;letter-spacing:0;}
+  .cal-cell{min-height:60px;padding:4px 3px;}
+  .cal-appt{font-size:9px;padding:1px 3px;}
+  .cal-month-label{font-size:15px;min-width:130px;}
+  .cal-modal{padding:20px 18px;}
+  .cal-form-row{flex-direction:column;gap:8px;}
 }
 </style>
 </head>
@@ -320,10 +371,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
     <div id="view-admin" class="view-section"></div>
     <div id="view-admin-client" class="view-section"></div>
     <div id="view-management" class="view-section"></div>
+    <div id="view-calendar" class="view-section"></div>
   </main>
 
   <footer class="footer">ONE PAGE BUSINESS · Clarity · Systems · Results</footer>
 </div>
+
+<div id="calModal" class="cal-modal-overlay" onclick="if(event.target===this)closeApptModal()"></div>
 
 <script>
 // ═══════════════════════════════════════
@@ -607,6 +661,10 @@ function buildNav() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="4" rx="1"/><rect x="3" y="10" width="18" height="4" rx="1"/><rect x="3" y="17" width="11" height="4" rx="1"/></svg>
         Management
       </button>
+      <button class="nav-btn" data-view="calendar" onclick="switchView('calendar')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Calendar
+      </button>
     `;
   }
 
@@ -627,6 +685,7 @@ function switchView(viewId) {
   else if (viewId === 'kpis') renderKPIs();
   else if (viewId === 'admin') renderAdmin();
   else if (viewId === 'management') renderManagement();
+  else if (viewId === 'calendar') renderCalendar();
 }
 
 // ═══════════════════════════════════════
@@ -1146,6 +1205,269 @@ async function deleteTask(projectId, taskId) {
   projectsData[idx].tasks = projectsData[idx].tasks.filter(t => t.id !== taskId);
   await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
   drawManagement();
+}
+
+// ═══════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════
+let calServices = [];
+let calAppointments = [];
+let calCurrentDate = new Date();
+let calServicesOpen = false;
+
+async function renderCalendar() {
+  const c = document.getElementById('view-calendar');
+  c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+  const [{ data: svc }, { data: appt }] = await Promise.all([
+    supabase.from('services').select('*').eq('admin_id', currentUser.id).order('created_at',{ascending:true}),
+    supabase.from('appointments').select('*').eq('admin_id', currentUser.id).order('start_at',{ascending:true})
+  ]);
+  calServices = svc || [];
+  calAppointments = appt || [];
+  if (calServices.length === 0) calServicesOpen = true;
+  drawCalendar();
+}
+
+function drawCalendar() {
+  const c = document.getElementById('view-calendar');
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const year = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+  c.innerHTML = drawServicesPanel() + `
+    <div class="cal-header">
+      <div class="cal-month-nav">
+        <button class="cal-nav-btn" onclick="calPrevMonth()">←</button>
+        <span class="cal-month-label">${MONTHS[month]} ${year}</span>
+        <button class="cal-nav-btn" onclick="calNextMonth()">→</button>
+      </div>
+      <button class="btn-outline" onclick="openApptModal(null,null)">+ New Appointment</button>
+    </div>` + drawCalendarMonth();
+}
+
+function drawServicesPanel() {
+  let html = `<div class="services-panel">
+    <div class="services-panel-header" onclick="calServicesOpen=!calServicesOpen;drawCalendar()">
+      <span class="services-panel-title">Services &amp; Products</span>
+      <span style="color:var(--ink-mute);font-size:12px;">${calServicesOpen?'▲':'▼'}&nbsp;${calServices.length} service${calServices.length!==1?'s':''}</span>
+    </div>`;
+  if (calServicesOpen) {
+    html += '<div class="services-panel-body">';
+    if (!calServices.length) html += '<p style="font-size:13px;color:var(--ink-mute);margin-bottom:14px;">No services yet. Add your first one below.</p>';
+    calServices.forEach(s => {
+      html += `<div class="service-row">
+        <input class="service-name-input" value="${escHtml(s.name)}" placeholder="Service name"
+          onblur="updateService('${s.id}','name',this.value)">
+        <input class="service-small-input" type="number" value="${s.price}" placeholder="0" min="0" step="0.01"
+          onblur="updateService('${s.id}','price',this.value)">
+        <span class="service-input-label">€</span>
+        <input class="service-small-input" type="number" value="${s.duration_minutes}" placeholder="60" min="1"
+          onblur="updateService('${s.id}','duration_minutes',this.value)">
+        <span class="service-input-label">min</span>
+        <button class="task-del" onclick="deleteService('${s.id}')" title="Delete">×</button>
+      </div>`;
+    });
+    html += `<button class="add-task-btn" onclick="addService()">+ Add service</button></div>`;
+  }
+  return html + '</div>';
+}
+
+function drawCalendarMonth() {
+  const year = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+  let html = '<div class="cal-grid"><div class="cal-grid-header">';
+  DAYS.forEach(d => { html += `<div class="cal-grid-dow">${d}</div>`; });
+  html += '</div><div class="cal-grid-body">';
+
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const d = new Date(year, month, -i);
+    html += `<div class="cal-cell other-month"><div class="cal-day-num">${d.getDate()}</div></div>`;
+  }
+
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const isToday = dateStr === todayStr;
+    const dayAppts = calAppointments.filter(a => {
+      const d = new Date(a.start_at);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === dateStr;
+    });
+    html += `<div class="cal-cell${isToday?' today':''}" onclick="openApptModal('${dateStr}',null)">
+      <div class="cal-day-num">${day}</div>
+      ${dayAppts.map(a => {
+        const d = new Date(a.start_at);
+        const t = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        return `<div class="cal-appt${a.status!=='confirmed'?' '+a.status:''}" onclick="event.stopPropagation();openApptModal('${dateStr}','${a.id}')">${t} ${escHtml(a.service_name||a.client_name||'Appt')}</div>`;
+      }).join('')}
+      <button class="cal-new-btn" onclick="event.stopPropagation();openApptModal('${dateStr}',null)">+</button>
+    </div>`;
+  }
+
+  const remainder = (startOffset + lastDay.getDate()) % 7;
+  if (remainder > 0) {
+    for (let i = 1; i <= 7 - remainder; i++) {
+      html += `<div class="cal-cell other-month"><div class="cal-day-num">${i}</div></div>`;
+    }
+  }
+  return html + '</div></div>';
+}
+
+function calPrevMonth() { calCurrentDate = new Date(calCurrentDate.getFullYear(), calCurrentDate.getMonth()-1, 1); drawCalendar(); }
+function calNextMonth() { calCurrentDate = new Date(calCurrentDate.getFullYear(), calCurrentDate.getMonth()+1, 1); drawCalendar(); }
+
+function openApptModal(dateStr, apptId) {
+  const appt = apptId ? calAppointments.find(a => a.id === apptId) : null;
+  const now = new Date();
+  const defaultDate = dateStr || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  let apptDate = defaultDate, apptTime = '09:00';
+  if (appt) {
+    const d = new Date(appt.start_at);
+    apptDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    apptTime = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+  const serviceOpts = calServices.map(s =>
+    `<option value="${s.id}" data-price="${s.price}" data-dur="${s.duration_minutes}" data-name="${escHtml(s.name)}" ${appt?.service_id===s.id?'selected':''}>${escHtml(s.name)} — €${s.price} · ${s.duration_minutes}min</option>`
+  ).join('');
+  const modal = document.getElementById('calModal');
+  modal.innerHTML = `<div class="cal-modal">
+    <h3 class="cal-modal-title">${appt?'Edit Appointment':'New Appointment'}</h3>
+    <div class="cal-form-row">
+      <div class="cal-form-group">
+        <label class="cal-form-label">Client Name</label>
+        <input class="cal-form-input" id="calClientName" value="${escHtml(appt?.client_name||'')}" placeholder="Client name">
+      </div>
+      <div class="cal-form-group">
+        <label class="cal-form-label">Client Email</label>
+        <input class="cal-form-input" id="calClientEmail" type="email" value="${escHtml(appt?.client_email||'')}" placeholder="email@example.com">
+      </div>
+    </div>
+    <div class="cal-form-row">
+      <div class="cal-form-group">
+        <label class="cal-form-label">Service / Product</label>
+        <select class="cal-form-input cal-form-select" id="calServiceSel" onchange="calServiceChanged(this)">
+          <option value="">— No service selected —</option>
+          ${serviceOpts}
+        </select>
+      </div>
+    </div>
+    <div class="cal-form-row">
+      <div class="cal-form-group">
+        <label class="cal-form-label">Price (€)</label>
+        <input class="cal-form-input" id="calPrice" type="number" min="0" step="0.01" value="${appt?.price??''}" placeholder="0.00">
+      </div>
+      <div class="cal-form-group">
+        <label class="cal-form-label">Duration (min)</label>
+        <input class="cal-form-input" id="calDuration" type="number" min="1" value="${appt?.duration_minutes??60}" placeholder="60">
+      </div>
+    </div>
+    <div class="cal-form-row">
+      <div class="cal-form-group">
+        <label class="cal-form-label">Date</label>
+        <input class="cal-form-input" id="calDate" type="date" value="${apptDate}">
+      </div>
+      <div class="cal-form-group">
+        <label class="cal-form-label">Time</label>
+        <input class="cal-form-input" id="calTime" type="time" value="${apptTime}">
+      </div>
+    </div>
+    ${appt?`<div class="cal-form-row"><div class="cal-form-group">
+      <label class="cal-form-label">Status</label>
+      <select class="cal-form-input cal-form-select" id="calStatus">
+        <option value="confirmed" ${appt.status==='confirmed'?'selected':''}>Confirmed</option>
+        <option value="completed" ${appt.status==='completed'?'selected':''}>Completed</option>
+        <option value="cancelled" ${appt.status==='cancelled'?'selected':''}>Cancelled</option>
+      </select>
+    </div></div>`:''}
+    <div class="cal-form-row">
+      <div class="cal-form-group">
+        <label class="cal-form-label">Notes</label>
+        <textarea class="cal-form-input" id="calNotes" rows="2" placeholder="Any notes...">${escHtml(appt?.notes||'')}</textarea>
+      </div>
+    </div>
+    <div class="cal-modal-actions">
+      ${appt?`<button class="btn-danger-sm" onclick="deleteAppt('${appt.id}')">Delete</button>`:''}
+      <button class="btn-outline" onclick="closeApptModal()" style="width:auto;">Cancel</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="saveAppt(${appt?`'${appt.id}'`:'null'})">
+        ${appt?'Save Changes':'Book Appointment'}
+      </button>
+    </div>
+  </div>`;
+  modal.classList.add('open');
+}
+
+function closeApptModal() { document.getElementById('calModal').classList.remove('open'); }
+
+function calServiceChanged(sel) {
+  const opt = sel.selectedOptions[0];
+  if (opt?.value) {
+    document.getElementById('calPrice').value = opt.dataset.price || '';
+    document.getElementById('calDuration').value = opt.dataset.dur || 60;
+  }
+}
+
+async function saveAppt(apptId) {
+  const date = document.getElementById('calDate').value;
+  const time = document.getElementById('calTime').value;
+  if (!date || !time) { alert('Please set a date and time.'); return; }
+  const sel = document.getElementById('calServiceSel');
+  const serviceId = sel.value || null;
+  const payload = {
+    admin_id: currentUser.id,
+    client_name: document.getElementById('calClientName').value.trim(),
+    client_email: document.getElementById('calClientEmail').value.trim(),
+    service_id: serviceId,
+    service_name: serviceId ? (sel.selectedOptions[0]?.dataset?.name || '') : '',
+    price: parseFloat(document.getElementById('calPrice').value) || 0,
+    duration_minutes: parseInt(document.getElementById('calDuration').value) || 60,
+    start_at: new Date(`${date}T${time}`).toISOString(),
+    notes: document.getElementById('calNotes').value.trim(),
+    status: document.getElementById('calStatus')?.value || 'confirmed',
+  };
+  if (apptId) {
+    await supabase.from('appointments').update(payload).eq('id', apptId);
+    const idx = calAppointments.findIndex(a => a.id === apptId);
+    if (idx !== -1) calAppointments[idx] = {...calAppointments[idx], ...payload};
+  } else {
+    const { data } = await supabase.from('appointments').insert(payload).select().single();
+    if (data) calAppointments.push(data);
+  }
+  closeApptModal();
+  drawCalendar();
+}
+
+async function deleteAppt(id) {
+  if (!confirm('Delete this appointment?')) return;
+  await supabase.from('appointments').delete().eq('id', id);
+  calAppointments = calAppointments.filter(a => a.id !== id);
+  closeApptModal();
+  drawCalendar();
+}
+
+async function addService() {
+  const { data } = await supabase.from('services').insert({
+    admin_id: currentUser.id, name: 'New Service', price: 0, duration_minutes: 60
+  }).select().single();
+  if (data) { calServices.push(data); calServicesOpen = true; drawCalendar(); }
+}
+
+async function updateService(id, field, value) {
+  const idx = calServices.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  const val = field==='price' ? parseFloat(value)||0 : field==='duration_minutes' ? parseInt(value)||60 : value;
+  calServices[idx][field] = val;
+  await supabase.from('services').update({[field]: val}).eq('id', id);
+}
+
+async function deleteService(id) {
+  if (!confirm('Delete this service?')) return;
+  calServices = calServices.filter(s => s.id !== id);
+  await supabase.from('services').delete().eq('id', id);
+  drawCalendar();
 }
 
 // ═══════════════════════════════════════

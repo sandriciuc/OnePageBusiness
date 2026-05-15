@@ -169,3 +169,45 @@ DROP TRIGGER IF EXISTS projects_updated_at ON projects;
 CREATE TRIGGER projects_updated_at
   BEFORE UPDATE ON projects
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 9. Services table (admin-defined offerings for calendar)
+CREATE TABLE IF NOT EXISTS services (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  admin_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL DEFAULT 'New Service',
+  price DECIMAL(10,2) DEFAULT 0,
+  duration_minutes INTEGER DEFAULT 60,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admin manages own services" ON services;
+CREATE POLICY "Admin manages own services"
+  ON services FOR ALL
+  USING (auth.uid() = admin_id)
+  WITH CHECK (auth.uid() = admin_id);
+
+-- 10. Appointments table
+CREATE TABLE IF NOT EXISTS appointments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  admin_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  client_name TEXT DEFAULT '',
+  client_email TEXT DEFAULT '',
+  service_id UUID,
+  service_name TEXT DEFAULT '',
+  price DECIMAL(10,2) DEFAULT 0,
+  duration_minutes INTEGER DEFAULT 60,
+  start_at TIMESTAMPTZ NOT NULL,
+  notes TEXT DEFAULT '',
+  status TEXT DEFAULT 'confirmed' CHECK (status IN ('confirmed', 'cancelled', 'completed')),
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admin manages own appointments" ON appointments;
+CREATE POLICY "Admin manages own appointments"
+  ON appointments FOR ALL
+  USING (auth.uid() = admin_id)
+  WITH CHECK (auth.uid() = admin_id);
