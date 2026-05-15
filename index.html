@@ -284,7 +284,42 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
   .cal-month-label{font-size:15px;min-width:130px;}
   .cal-modal{padding:20px 18px;}
   .cal-form-row{flex-direction:column;gap:8px;}
+  .mf-summary-cards{grid-template-columns:1fr;}
+  .mf-chart{height:90px;}
 }
+
+/* ═══ MONEY FLOW ═══ */
+.mf-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+.mf-month-nav{display:flex;align-items:center;gap:10px;}
+.mf-month-label{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--ink);min-width:180px;text-align:center;}
+.mf-tabs{display:flex;background:var(--white);border:1px solid var(--cream-dark);border-radius:10px;margin-bottom:20px;overflow:hidden;}
+.mf-tab-btn{flex:1;padding:10px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:#999;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;letter-spacing:0.04em;text-transform:uppercase;transition:all 0.2s;white-space:nowrap;}
+.mf-tab-btn:hover{color:var(--ink-soft);}
+.mf-tab-btn.active{color:var(--green);font-weight:600;border-bottom-color:var(--green);}
+.mf-summary-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
+.mf-summary-card{background:var(--white);border-radius:12px;padding:18px 20px;border:1px solid rgba(61,90,76,0.08);}
+.mf-card-label{font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px;}
+.mf-card-value{font-family:'Playfair Display',serif;font-size:26px;color:var(--ink);}
+.mf-section-label{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:12px;}
+.mf-chart-wrap{background:var(--white);border:1px solid var(--cream-dark);border-radius:12px;padding:16px 16px 0;margin-bottom:4px;}
+.mf-chart{display:flex;align-items:flex-end;gap:6px;height:120px;}
+.mf-chart-col{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;}
+.mf-chart-bars{display:flex;align-items:flex-end;gap:2px;flex:1;width:100%;}
+.mf-bar{flex:1;border-radius:3px 3px 0 0;transition:height 0.3s ease;min-height:2px;}
+.mf-bar-rev{background:var(--green);opacity:0.85;}
+.mf-bar-exp{background:var(--amber);opacity:0.85;}
+.mf-chart-label{font-size:10px;color:var(--ink-mute);padding:4px 0 8px;text-align:center;}
+.mf-chart-label-active{color:var(--green);font-weight:600;}
+.mf-table{width:100%;border-collapse:collapse;font-size:13px;}
+.mf-table thead tr{background:var(--cream);border-bottom:1px solid var(--cream-dark);}
+.mf-table th{padding:10px 14px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-mute);}
+.mf-table td{padding:8px 14px;border-bottom:1px solid rgba(0,0,0,0.04);}
+.mf-table tbody tr:last-child td{border-bottom:none;}
+.mf-table tbody tr:hover{background:rgba(61,90,76,0.02);}
+.mf-inline-input{border:none;border-bottom:1px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;width:100%;padding:2px 0;transition:border-color 0.2s;}
+.mf-inline-input:focus{border-bottom-color:var(--green);}
+.mf-amount-input{font-weight:500;text-align:right;width:80px;}
+.mf-empty{text-align:center;padding:32px 20px;color:var(--ink-mute);font-size:13px;background:var(--white);border-radius:12px;border:1px solid rgba(61,90,76,0.08);}
 </style>
 </head>
 <body>
@@ -375,6 +410,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
     <div id="view-admin-client" class="view-section"></div>
     <div id="view-management" class="view-section"></div>
     <div id="view-calendar" class="view-section"></div>
+    <div id="view-moneyflow" class="view-section"></div>
   </main>
 
   <footer class="footer">ONE PAGE BUSINESS · Clarity · Systems · Results</footer>
@@ -669,6 +705,10 @@ function buildNav() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         Calendar
       </button>
+      <button class="nav-btn" data-view="moneyflow" onclick="switchView('moneyflow')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Money Flow
+      </button>
     `;
   }
 
@@ -690,6 +730,7 @@ function switchView(viewId) {
   else if (viewId === 'admin') renderAdmin();
   else if (viewId === 'management') renderManagement();
   else if (viewId === 'calendar') renderCalendar();
+  else if (viewId === 'moneyflow') renderMoneyFlow();
 }
 
 // ═══════════════════════════════════════
@@ -1562,6 +1603,496 @@ function exportICS() {
   link.href = url; link.download = 'one-page-business-appointments.ics';
   document.body.appendChild(link); link.click();
   document.body.removeChild(link); URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════
+// MONEY FLOW
+// ═══════════════════════════════════════
+const MF_KEY = 'opb-money-flow-v4';
+let mfData = null;
+let mfTab = 'overview';
+let mfMonth = null;
+
+function mfLoad() {
+  try {
+    const raw = localStorage.getItem(MF_KEY);
+    mfData = raw ? JSON.parse(raw) : { months: {} };
+  } catch(e) {
+    mfData = { months: {} };
+  }
+  if (!mfMonth) {
+    const now = new Date();
+    mfMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  }
+  if (!mfData.months[mfMonth]) mfData.months[mfMonth] = { revenue: [], fixedExpenses: [], variableExpenses: [] };
+}
+
+function mfSave() {
+  localStorage.setItem(MF_KEY, JSON.stringify(mfData));
+}
+
+function mfGetMonth(m) {
+  if (!mfData.months[m]) mfData.months[m] = { revenue: [], fixedExpenses: [], variableExpenses: [] };
+  return mfData.months[m];
+}
+
+function mfFormatMonth(m) {
+  const [y, mo] = m.split('-');
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return `${MONTHS[parseInt(mo)-1]} ${y}`;
+}
+
+function mfPrevMonth() {
+  const [y, m] = mfMonth.split('-').map(Number);
+  const d = new Date(y, m-2, 1);
+  mfMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  mfGetMonth(mfMonth);
+  renderMoneyFlow();
+}
+
+function mfNextMonth() {
+  const [y, m] = mfMonth.split('-').map(Number);
+  const d = new Date(y, m, 1);
+  mfMonth = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  mfGetMonth(mfMonth);
+  renderMoneyFlow();
+}
+
+function mfCalcTotals(md) {
+  const totalRevenue = (md.revenue||[]).reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
+  const totalFixed = (md.fixedExpenses||[]).reduce((s,e) => s+(parseFloat(e.amount)||0), 0);
+  const totalVariable = (md.variableExpenses||[]).reduce((s,e) => s+(parseFloat(e.amount)||0), 0);
+  const totalExpenses = totalFixed + totalVariable;
+  const net = totalRevenue - totalExpenses;
+  return { totalRevenue, totalFixed, totalVariable, totalExpenses, net };
+}
+
+function mfFmt(n) {
+  const abs = Math.abs(parseFloat(n)||0);
+  const str = abs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return (n < 0 ? '-' : '') + '€' + str;
+}
+
+function renderMoneyFlow() {
+  mfLoad();
+  const c = document.getElementById('view-moneyflow');
+  const tabs = [
+    { id:'overview',  label:'Overview' },
+    { id:'revenue',   label:'Revenue' },
+    { id:'expenses',  label:'Expenses' },
+    { id:'breakeven', label:'Break-Even' },
+  ];
+  let html = `
+    <div class="mf-header">
+      <div class="mf-month-nav">
+        <button class="cal-nav-btn" onclick="mfPrevMonth()">←</button>
+        <span class="mf-month-label">${mfFormatMonth(mfMonth)}</span>
+        <button class="cal-nav-btn" onclick="mfNextMonth()">→</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-outline" onclick="mfDuplicateMonth()" style="font-size:12px;">Duplicate Month</button>
+        <button class="btn-outline" onclick="mfExport()" style="font-size:12px;display:inline-flex;align-items:center;gap:5px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+      </div>
+    </div>
+    <div class="mf-tabs">
+      ${tabs.map(t => `<button class="mf-tab-btn${mfTab===t.id?' active':''}" onclick="mfSwitchTab('${t.id}')">${t.label}</button>`).join('')}
+    </div>
+  `;
+  const monthData = mfGetMonth(mfMonth);
+  if (mfTab === 'overview')  html += mfRenderOverview(monthData);
+  else if (mfTab === 'revenue')   html += mfRenderRevenue(monthData);
+  else if (mfTab === 'expenses')  html += mfRenderExpenses(monthData);
+  else if (mfTab === 'breakeven') html += mfRenderBreakeven(monthData);
+  c.innerHTML = html;
+}
+
+function mfSwitchTab(tab) { mfTab = tab; renderMoneyFlow(); }
+
+function mfRenderOverview(monthData) {
+  const { totalRevenue, totalFixed, totalVariable, totalExpenses, net } = mfCalcTotals(monthData);
+  const netColor = net >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // 6-month chart
+  const [y, mo] = mfMonth.split('-').map(Number);
+  const chartMonths = [];
+  for (let i = -5; i <= 0; i++) {
+    const d = new Date(y, mo - 1 + i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const md = mfData.months[key] || { revenue:[], fixedExpenses:[], variableExpenses:[] };
+    const t = mfCalcTotals(md);
+    chartMonths.push({ key, label: d.toLocaleString('default',{month:'short'}), ...t });
+  }
+  const maxVal = Math.max(...chartMonths.map(m => Math.max(m.totalRevenue, m.totalExpenses)), 1);
+
+  let html = `
+    <div class="mf-summary-cards">
+      <div class="mf-summary-card" style="border-left:3px solid var(--green);">
+        <div class="mf-card-label">Total Revenue</div>
+        <div class="mf-card-value" style="color:var(--green);">${mfFmt(totalRevenue)}</div>
+      </div>
+      <div class="mf-summary-card" style="border-left:3px solid var(--amber);">
+        <div class="mf-card-label">Total Expenses</div>
+        <div class="mf-card-value" style="color:var(--amber);">${mfFmt(totalExpenses)}</div>
+        <div style="font-size:11px;color:var(--ink-mute);margin-top:4px;">Fixed: ${mfFmt(totalFixed)} · Variable: ${mfFmt(totalVariable)}</div>
+      </div>
+      <div class="mf-summary-card" style="border-left:3px solid ${netColor};">
+        <div class="mf-card-label">Net Profit</div>
+        <div class="mf-card-value" style="color:${netColor};">${mfFmt(net)}</div>
+      </div>
+    </div>
+    <div class="mf-section-label">6-Month Overview</div>
+    <div class="mf-chart-wrap">
+      <div class="mf-chart">
+        ${chartMonths.map(m => {
+          const rH = Math.round((m.totalRevenue / maxVal) * 100);
+          const eH = Math.round((m.totalExpenses / maxVal) * 100);
+          const isCurrent = m.key === mfMonth;
+          return `<div class="mf-chart-col">
+            <div class="mf-chart-bars">
+              <div class="mf-bar mf-bar-rev" style="height:${rH}%;" title="${mfFmt(m.totalRevenue)}"></div>
+              <div class="mf-bar mf-bar-exp" style="height:${eH}%;" title="${mfFmt(m.totalExpenses)}"></div>
+            </div>
+            <div class="mf-chart-label${isCurrent?' mf-chart-label-active':''}">${m.label}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:8px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-mute);">
+        <span style="width:10px;height:10px;background:var(--green);opacity:0.85;border-radius:2px;display:inline-block;"></span>Revenue
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-mute);">
+        <span style="width:10px;height:10px;background:var(--amber);opacity:0.85;border-radius:2px;display:inline-block;"></span>Expenses
+      </div>
+    </div>
+  `;
+
+  const recentRev = [...(monthData.revenue||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  if (recentRev.length) {
+    html += `<div class="mf-section-label">Recent Revenue</div>
+    <div class="field-card" style="padding:0;overflow:hidden;">
+      <table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>
+      ${recentRev.map(r => `<tr>
+        <td>${r.date||''}</td>
+        <td>${escHtml(r.description||'')}</td>
+        <td style="color:var(--green);font-weight:500;">${mfFmt(r.amount)}</td>
+      </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  }
+
+  const recentExp = [...(monthData.variableExpenses||[])].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  if (recentExp.length) {
+    html += `<div class="mf-section-label" style="margin-top:20px;">Recent Expenses</div>
+    <div class="field-card" style="padding:0;overflow:hidden;">
+      <table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>
+      ${recentExp.map(e => `<tr>
+        <td>${e.date||''}</td>
+        <td>${escHtml(e.description||'')}</td>
+        <td style="color:var(--amber);font-weight:500;">${mfFmt(e.amount)}</td>
+      </tr>`).join('')}
+      </tbody></table>
+    </div>`;
+  }
+
+  if (!recentRev.length && !recentExp.length) {
+    html += `<div class="mf-empty">No entries yet this month.<br><span style="color:var(--green);cursor:pointer;font-weight:500;" onclick="mfSwitchTab('revenue')">Add revenue →</span> or <span style="color:var(--amber);cursor:pointer;font-weight:500;" onclick="mfSwitchTab('expenses')">Add expenses →</span></div>`;
+  }
+
+  return html;
+}
+
+function mfRenderRevenue(monthData) {
+  const revenue = monthData.revenue || [];
+  const offers = strategyData?.offers_data || [];
+  const total = revenue.reduce((s,r)=>s+(parseFloat(r.amount)||0),0);
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <div class="mf-section-label" style="margin-bottom:2px;">Revenue Entries</div>
+        <div style="font-size:13px;color:var(--ink-mute);">Total: <strong style="color:var(--green);">${mfFmt(total)}</strong></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        ${offers.length ? `<select class="cal-form-input cal-form-select" style="max-width:220px;font-size:12px;" onchange="mfAddRevenueFromOffer(this.value);this.value=''">
+          <option value="">+ From offer...</option>
+          ${offers.map(o => `<option value="${escHtml(o.name)}|${o.price}">${escHtml(o.name)} — €${o.price}</option>`).join('')}
+        </select>` : ''}
+        <button class="btn-outline" onclick="mfAddRevenue()" style="font-size:12px;">+ Add entry</button>
+      </div>
+    </div>
+  `;
+
+  if (!revenue.length) {
+    html += '<div class="mf-empty">No revenue entries yet. Add your first one above.</div>';
+  } else {
+    html += '<div class="field-card" style="padding:0;overflow:hidden;">';
+    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right;">Amount (€)</th><th></th></tr></thead><tbody>';
+    revenue.forEach(r => {
+      html += `<tr>
+        <td><input type="date" class="mf-inline-input" value="${r.date||''}" onchange="mfUpdateRevenue('${r.id}','date',this.value)"></td>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(r.description||'')}" placeholder="Description" onblur="mfUpdateRevenue('${r.id}','description',this.value)"></td>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(r.category||'')}" placeholder="Category" onblur="mfUpdateRevenue('${r.id}','category',this.value)"></td>
+        <td><input type="number" class="mf-inline-input mf-amount-input" value="${r.amount||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateRevenue('${r.id}','amount',this.value)"></td>
+        <td><button class="task-del" onclick="mfDeleteRevenue('${r.id}')">×</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+  return html;
+}
+
+function mfRenderExpenses(monthData) {
+  const fixed = monthData.fixedExpenses || [];
+  const variable = monthData.variableExpenses || [];
+  const totalFixed = fixed.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+  const totalVar = variable.reduce((s,e)=>s+(parseFloat(e.amount)||0),0);
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div class="mf-section-label" style="margin-bottom:2px;">Fixed Expenses</div>
+        <div style="font-size:12px;color:var(--ink-mute);">Monthly recurring costs · Total: <strong style="color:var(--amber);">${mfFmt(totalFixed)}</strong></div>
+      </div>
+      <button class="btn-outline" onclick="mfAddFixed()" style="font-size:12px;">+ Add fixed cost</button>
+    </div>
+  `;
+
+  if (!fixed.length) {
+    html += '<div class="mf-empty" style="margin-bottom:24px;">No fixed expenses yet.</div>';
+  } else {
+    html += '<div class="field-card" style="padding:0;overflow:hidden;margin-bottom:24px;">';
+    html += '<table class="mf-table"><thead><tr><th>Description</th><th>Category</th><th style="text-align:right;">Amount (€)</th><th></th></tr></thead><tbody>';
+    fixed.forEach(e => {
+      html += `<tr>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(e.description||'')}" placeholder="e.g. Software subscription" onblur="mfUpdateFixed('${e.id}','description',this.value)"></td>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateFixed('${e.id}','category',this.value)"></td>
+        <td><input type="number" class="mf-inline-input mf-amount-input" value="${e.amount||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateFixed('${e.id}','amount',this.value)"></td>
+        <td><button class="task-del" onclick="mfDeleteFixed('${e.id}')">×</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+
+  html += `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div class="mf-section-label" style="margin-bottom:2px;">Variable Expenses</div>
+        <div style="font-size:12px;color:var(--ink-mute);">One-off costs this month · Total: <strong style="color:var(--amber);">${mfFmt(totalVar)}</strong></div>
+      </div>
+      <button class="btn-outline" onclick="mfAddVariable()" style="font-size:12px;">+ Add variable cost</button>
+    </div>
+  `;
+
+  if (!variable.length) {
+    html += '<div class="mf-empty">No variable expenses yet.</div>';
+  } else {
+    html += '<div class="field-card" style="padding:0;overflow:hidden;">';
+    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right;">Amount (€)</th><th></th></tr></thead><tbody>';
+    variable.forEach(e => {
+      html += `<tr>
+        <td><input type="date" class="mf-inline-input" value="${e.date||''}" onchange="mfUpdateVariable('${e.id}','date',this.value)"></td>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(e.description||'')}" placeholder="Description" onblur="mfUpdateVariable('${e.id}','description',this.value)"></td>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateVariable('${e.id}','category',this.value)"></td>
+        <td><input type="number" class="mf-inline-input mf-amount-input" value="${e.amount||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateVariable('${e.id}','amount',this.value)"></td>
+        <td><button class="task-del" onclick="mfDeleteVariable('${e.id}')">×</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+  return html;
+}
+
+function mfRenderBreakeven(monthData) {
+  const { totalFixed, totalRevenue, totalExpenses, net } = mfCalcTotals(monthData);
+  const offers = strategyData?.offers_data || [];
+  const revenue = monthData.revenue || [];
+  const profitMargin = totalRevenue > 0 ? ((net / totalRevenue) * 100).toFixed(1) : 0;
+  const netColor = net >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Break-even: fixed costs / avg revenue per transaction
+  const revenueCount = revenue.length || 1;
+  const avgSale = totalRevenue / revenueCount;
+  const beUnits = avgSale > 0 ? Math.ceil(totalFixed / avgSale) : 0;
+  const beRevenue = beUnits * avgSale;
+  const breakEvenProgress = beRevenue > 0 ? Math.min(100, Math.round((totalRevenue / beRevenue) * 100)) : (totalRevenue > 0 ? 100 : 0);
+
+  let html = `
+    <div class="mf-summary-cards">
+      <div class="mf-summary-card" style="border-left:3px solid var(--green);">
+        <div class="mf-card-label">Revenue</div>
+        <div class="mf-card-value" style="color:var(--green);">${mfFmt(totalRevenue)}</div>
+      </div>
+      <div class="mf-summary-card" style="border-left:3px solid var(--amber);">
+        <div class="mf-card-label">Fixed Costs</div>
+        <div class="mf-card-value" style="color:var(--amber);">${mfFmt(totalFixed)}</div>
+      </div>
+      <div class="mf-summary-card" style="border-left:3px solid ${netColor};">
+        <div class="mf-card-label">Profit Margin</div>
+        <div class="mf-card-value" style="color:${netColor};">${profitMargin}%</div>
+      </div>
+    </div>
+    <div class="mf-section-label">Break-Even Progress</div>
+    <div class="field-card" style="padding:20px;margin-bottom:24px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+        <span style="font-size:13px;color:var(--ink-mute);">Break-even revenue target</span>
+        <span style="font-size:13px;font-weight:600;">${mfFmt(beRevenue)}</span>
+      </div>
+      <div class="progress-bar" style="height:10px;margin-bottom:8px;">
+        <div class="progress-fill" style="width:${breakEvenProgress}%;background:${breakEvenProgress>=100?'var(--green)':'var(--amber)'};"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        <span style="font-size:12px;color:var(--ink-mute);">Current revenue: ${mfFmt(totalRevenue)}</span>
+        <span style="font-size:12px;color:${breakEvenProgress>=100?'var(--green)':'var(--amber)'};font-weight:500;">${breakEvenProgress}%</span>
+      </div>
+      ${breakEvenProgress >= 100
+        ? '<div style="margin-top:14px;padding:10px 16px;background:rgba(61,90,76,0.07);border-radius:8px;text-align:center;font-size:13px;color:var(--green);font-weight:500;">You\'ve hit break-even this month!</div>'
+        : beRevenue > 0 ? `<div style="margin-top:10px;font-size:12px;color:var(--ink-mute);">Need ${mfFmt(beRevenue - totalRevenue)} more to break even (approx. ${beUnits} transactions at avg ${mfFmt(avgSale)})</div>` : ''
+      }
+    </div>
+  `;
+
+  if (offers.length) {
+    html += `<div class="mf-section-label">Per-Offer Break-Even</div>
+    <div class="field-card" style="padding:0;overflow:hidden;">
+    <table class="mf-table"><thead><tr><th>Offer</th><th>Type</th><th>Price</th><th>Sales to Break-Even</th></tr></thead><tbody>
+    ${offers.map(o => {
+      const price = parseFloat(o.price) || 0;
+      const units = price > 0 ? Math.ceil(totalFixed / price) : '—';
+      const tLabel = (OFFER_TYPES.find(x=>x.value===o.type)||{label:o.type||''}).label;
+      return `<tr>
+        <td>${escHtml(o.name||'Unnamed')}</td>
+        <td style="color:var(--ink-mute);font-size:12px;">${tLabel}</td>
+        <td>${mfFmt(price)}</td>
+        <td><strong>${units}</strong> sales needed</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+  } else {
+    html += `<div style="font-size:13px;color:var(--ink-mute);padding:12px 0;">Add offers in <strong>Clarity → Offers</strong> to see per-offer break-even analysis.</div>`;
+  }
+
+  return html;
+}
+
+// ── Revenue CRUD ──────────────────────────
+function mfAddRevenue() {
+  const md = mfGetMonth(mfMonth);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', amount: 0 });
+  mfSave(); mfTab = 'revenue'; renderMoneyFlow();
+}
+
+function mfAddRevenueFromOffer(val) {
+  if (!val) return;
+  const [name, price] = val.split('|');
+  const md = mfGetMonth(mfMonth);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: name||'', category: 'Service', amount: parseFloat(price)||0 });
+  mfSave(); mfTab = 'revenue'; renderMoneyFlow();
+}
+
+function mfUpdateRevenue(id, field, value) {
+  const md = mfGetMonth(mfMonth);
+  const r = md.revenue.find(r => r.id === id);
+  if (!r) return;
+  r[field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  mfSave();
+}
+
+function mfDeleteRevenue(id) {
+  const md = mfGetMonth(mfMonth);
+  md.revenue = md.revenue.filter(r => r.id !== id);
+  mfSave(); renderMoneyFlow();
+}
+
+// ── Fixed expenses CRUD ───────────────────
+function mfAddFixed() {
+  const md = mfGetMonth(mfMonth);
+  md.fixedExpenses.push({ id: crypto.randomUUID(), description: '', category: '', amount: 0 });
+  mfSave(); renderMoneyFlow();
+}
+
+function mfUpdateFixed(id, field, value) {
+  const md = mfGetMonth(mfMonth);
+  const e = md.fixedExpenses.find(e => e.id === id);
+  if (!e) return;
+  e[field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  mfSave();
+}
+
+function mfDeleteFixed(id) {
+  const md = mfGetMonth(mfMonth);
+  md.fixedExpenses = md.fixedExpenses.filter(e => e.id !== id);
+  mfSave(); renderMoneyFlow();
+}
+
+// ── Variable expenses CRUD ────────────────
+function mfAddVariable() {
+  const md = mfGetMonth(mfMonth);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  md.variableExpenses.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', amount: 0 });
+  mfSave(); renderMoneyFlow();
+}
+
+function mfUpdateVariable(id, field, value) {
+  const md = mfGetMonth(mfMonth);
+  const e = md.variableExpenses.find(e => e.id === id);
+  if (!e) return;
+  e[field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  mfSave();
+}
+
+function mfDeleteVariable(id) {
+  const md = mfGetMonth(mfMonth);
+  md.variableExpenses = md.variableExpenses.filter(e => e.id !== id);
+  mfSave(); renderMoneyFlow();
+}
+
+// ── Duplicate & Export ────────────────────
+function mfDuplicateMonth() {
+  const [y, m] = mfMonth.split('-').map(Number);
+  const next = new Date(y, m, 1);
+  const nextKey = `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}`;
+  const current = mfGetMonth(mfMonth);
+  const target = mfGetMonth(nextKey);
+  target.fixedExpenses = current.fixedExpenses.map(e => ({...e, id: crypto.randomUUID()}));
+  mfSave();
+  if (confirm(`Fixed expenses copied to ${mfFormatMonth(nextKey)}.\n\nGo to that month now?`)) {
+    mfMonth = nextKey;
+    renderMoneyFlow();
+  }
+}
+
+function mfExport() {
+  const md = mfGetMonth(mfMonth);
+  const { totalRevenue, totalFixed, totalVariable, totalExpenses, net } = mfCalcTotals(md);
+  let txt = `ONE PAGE BUSINESS — Money Flow\n${mfFormatMonth(mfMonth)}\n${'═'.repeat(40)}\n\n`;
+  txt += `REVENUE  ${mfFmt(totalRevenue)}\n`;
+  (md.revenue||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
+    txt += `  ${(r.date||'—').padEnd(12)} ${(r.description||'—').padEnd(28)} ${mfFmt(r.amount)}\n`;
+  });
+  txt += `\nFIXED EXPENSES  ${mfFmt(totalFixed)}\n`;
+  (md.fixedExpenses||[]).forEach(e => {
+    txt += `  ${(e.description||'—').padEnd(40)} ${mfFmt(e.amount)}\n`;
+  });
+  txt += `\nVARIABLE EXPENSES  ${mfFmt(totalVariable)}\n`;
+  (md.variableExpenses||[]).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(e => {
+    txt += `  ${(e.date||'—').padEnd(12)} ${(e.description||'—').padEnd(28)} ${mfFmt(e.amount)}\n`;
+  });
+  txt += `\n${'═'.repeat(40)}\nTOTAL EXPENSES  ${mfFmt(totalExpenses)}\nNET PROFIT      ${mfFmt(net)}\n`;
+  const blob = new Blob([txt], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `money-flow-${mfMonth}.txt`;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 // ═══════════════════════════════════════
