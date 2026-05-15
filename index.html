@@ -2272,13 +2272,18 @@ function mfRenderRevenue(monthData) {
     html += '<div class="mf-empty">No revenue entries yet. Add your first one above.</div>';
   } else {
     html += '<div class="field-card" style="padding:0;overflow:hidden;">';
-    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right;">Amount (€)</th><th></th></tr></thead><tbody>';
+    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
     revenue.forEach(r => {
+      const qty = r.qty ?? 1;
+      const unitPrice = r.unitPrice ?? (r.amount ?? 0);
+      const total = qty * unitPrice;
       html += `<tr>
         <td><input type="date" class="mf-inline-input" value="${r.date||''}" onchange="mfUpdateRevenue('${r.id}','date',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(r.description||'')}" placeholder="Description" onblur="mfUpdateRevenue('${r.id}','description',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(r.category||'')}" placeholder="Category" onblur="mfUpdateRevenue('${r.id}','category',this.value)"></td>
-        <td><input type="number" class="mf-inline-input mf-amount-input" value="${r.amount||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateRevenue('${r.id}','amount',this.value)"></td>
+        <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateRevenue('${r.id}','qty',this.value)"></td>
+        <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateRevenue('${r.id}','unitPrice',this.value)"></td>
+        <td style="text-align:right;font-weight:600;color:var(--green);white-space:nowrap;">${mfFmt(total)}</td>
         <td><button class="task-del" onclick="mfDeleteRevenue('${r.id}')">×</button></td>
       </tr>`;
     });
@@ -2307,12 +2312,17 @@ function mfRenderExpenses(monthData) {
     html += '<div class="mf-empty" style="margin-bottom:24px;">No fixed expenses yet.</div>';
   } else {
     html += '<div class="field-card" style="padding:0;overflow:hidden;margin-bottom:24px;">';
-    html += '<table class="mf-table"><thead><tr><th>Description</th><th>Category</th><th style="text-align:right;">Amount (€)</th><th></th></tr></thead><tbody>';
+    html += '<table class="mf-table"><thead><tr><th>Description</th><th>Category</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
     fixed.forEach(e => {
+      const qty = e.qty ?? 1;
+      const unitPrice = e.unitPrice ?? (e.amount ?? 0);
+      const total = qty * unitPrice;
       html += `<tr>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.description||'')}" placeholder="e.g. Software subscription" onblur="mfUpdateFixed('${e.id}','description',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateFixed('${e.id}','category',this.value)"></td>
-        <td><input type="number" class="mf-inline-input mf-amount-input" value="${e.amount||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateFixed('${e.id}','amount',this.value)"></td>
+        <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateFixed('${e.id}','qty',this.value)"></td>
+        <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateFixed('${e.id}','unitPrice',this.value)"></td>
+        <td style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
         <td><button class="task-del" onclick="mfDeleteFixed('${e.id}')">×</button></td>
       </tr>`;
     });
@@ -2333,13 +2343,18 @@ function mfRenderExpenses(monthData) {
     html += '<div class="mf-empty">No variable expenses yet.</div>';
   } else {
     html += '<div class="field-card" style="padding:0;overflow:hidden;">';
-    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right;">Amount (€)</th><th></th></tr></thead><tbody>';
+    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
     variable.forEach(e => {
+      const qty = e.qty ?? 1;
+      const unitPrice = e.unitPrice ?? (e.amount ?? 0);
+      const total = qty * unitPrice;
       html += `<tr>
         <td><input type="date" class="mf-inline-input" value="${e.date||''}" onchange="mfUpdateVariable('${e.id}','date',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.description||'')}" placeholder="Description" onblur="mfUpdateVariable('${e.id}','description',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateVariable('${e.id}','category',this.value)"></td>
-        <td><input type="number" class="mf-inline-input mf-amount-input" value="${e.amount||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateVariable('${e.id}','amount',this.value)"></td>
+        <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateVariable('${e.id}','qty',this.value)"></td>
+        <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateVariable('${e.id}','unitPrice',this.value)"></td>
+        <td style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
         <td><button class="task-del" onclick="mfDeleteVariable('${e.id}')">×</button></td>
       </tr>`;
     });
@@ -2425,7 +2440,7 @@ function mfAddRevenue() {
   const md = mfGetMonth(mfMonth);
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', amount: 0 });
+  md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', qty: 1, unitPrice: 0, amount: 0 });
   mfTriggerSave(); mfTab = 'revenue'; renderMoneyFlow();
 }
 
@@ -2435,7 +2450,8 @@ function mfAddRevenueFromOffer(val) {
   const md = mfGetMonth(mfMonth);
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: name||'', category: 'Service', amount: parseFloat(price)||0 });
+  const unitPrice = parseFloat(price) || 0;
+  md.revenue.push({ id: crypto.randomUUID(), date: todayStr, description: name||'', category: 'Service', qty: 1, unitPrice, amount: unitPrice });
   mfTriggerSave(); mfTab = 'revenue'; renderMoneyFlow();
 }
 
@@ -2443,7 +2459,17 @@ function mfUpdateRevenue(id, field, value) {
   const md = mfGetMonth(mfMonth);
   const r = md.revenue.find(r => r.id === id);
   if (!r) return;
-  r[field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  if (field === 'qty') {
+    r.qty = parseInt(value) || 1;
+    r.unitPrice = r.unitPrice ?? r.amount ?? 0;
+    r.amount = r.qty * r.unitPrice;
+  } else if (field === 'unitPrice') {
+    r.unitPrice = parseFloat(value) || 0;
+    r.qty = r.qty ?? 1;
+    r.amount = r.qty * r.unitPrice;
+  } else {
+    r[field] = value;
+  }
   mfTriggerSave();
 }
 
@@ -2456,7 +2482,7 @@ function mfDeleteRevenue(id) {
 // ── Fixed expenses CRUD ───────────────────
 function mfAddFixed() {
   const md = mfGetMonth(mfMonth);
-  md.fixedExpenses.push({ id: crypto.randomUUID(), description: '', category: '', amount: 0 });
+  md.fixedExpenses.push({ id: crypto.randomUUID(), description: '', category: '', qty: 1, unitPrice: 0, amount: 0 });
   mfTriggerSave(); renderMoneyFlow();
 }
 
@@ -2464,7 +2490,17 @@ function mfUpdateFixed(id, field, value) {
   const md = mfGetMonth(mfMonth);
   const e = md.fixedExpenses.find(e => e.id === id);
   if (!e) return;
-  e[field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  if (field === 'qty') {
+    e.qty = parseInt(value) || 1;
+    e.unitPrice = e.unitPrice ?? e.amount ?? 0;
+    e.amount = e.qty * e.unitPrice;
+  } else if (field === 'unitPrice') {
+    e.unitPrice = parseFloat(value) || 0;
+    e.qty = e.qty ?? 1;
+    e.amount = e.qty * e.unitPrice;
+  } else {
+    e[field] = value;
+  }
   mfTriggerSave();
 }
 
@@ -2479,7 +2515,7 @@ function mfAddVariable() {
   const md = mfGetMonth(mfMonth);
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  md.variableExpenses.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', amount: 0 });
+  md.variableExpenses.push({ id: crypto.randomUUID(), date: todayStr, description: '', category: '', qty: 1, unitPrice: 0, amount: 0 });
   mfTriggerSave(); renderMoneyFlow();
 }
 
@@ -2487,7 +2523,17 @@ function mfUpdateVariable(id, field, value) {
   const md = mfGetMonth(mfMonth);
   const e = md.variableExpenses.find(e => e.id === id);
   if (!e) return;
-  e[field] = field === 'amount' ? (parseFloat(value)||0) : value;
+  if (field === 'qty') {
+    e.qty = parseInt(value) || 1;
+    e.unitPrice = e.unitPrice ?? e.amount ?? 0;
+    e.amount = e.qty * e.unitPrice;
+  } else if (field === 'unitPrice') {
+    e.unitPrice = parseFloat(value) || 0;
+    e.qty = e.qty ?? 1;
+    e.amount = e.qty * e.unitPrice;
+  } else {
+    e[field] = value;
+  }
   mfTriggerSave();
 }
 
