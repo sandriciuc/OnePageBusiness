@@ -321,6 +321,31 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .mf-amount-input{font-weight:500;text-align:right;width:80px;}
 .mf-empty{text-align:center;padding:32px 20px;color:var(--ink-mute);font-size:13px;background:var(--white);border-radius:12px;border:1px solid rgba(61,90,76,0.08);}
 
+/* ═══ ONE PAGE DASHBOARD ═══ */
+.op-section-title{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--amber);font-weight:600;margin-bottom:12px;margin-top:4px;}
+.op-table-wrap{overflow-x:auto;margin-bottom:28px;}
+.op-table{width:100%;border-collapse:collapse;font-size:13px;background:var(--white);border-radius:12px;overflow:hidden;border:1px solid var(--cream-dark);min-width:420px;}
+.op-table thead tr{background:var(--cream);}
+.op-table th{padding:10px 14px;text-align:center;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-mute);white-space:nowrap;border-bottom:1px solid var(--cream-dark);}
+.op-table td{padding:9px 14px;text-align:center;border-bottom:1px solid rgba(0,0,0,0.04);white-space:nowrap;}
+.op-table tbody tr:last-child td{border-bottom:none;}
+.op-table tbody tr:hover{background:rgba(61,90,76,0.02);}
+.op-row-label{text-align:left !important;font-weight:500;color:var(--ink);min-width:140px;}
+.op-row-muted td.op-row-label{color:var(--ink-mute);font-weight:400;}
+.op-total-col{background:rgba(61,90,76,0.04) !important;border-left:1px solid var(--cream-dark) !important;}
+.op-profit-row td{font-weight:600;border-top:2px solid var(--cream-dark);}
+.op-cell-empty{color:#ccc !important;}
+.op-price-tag{font-size:10px;color:var(--ink-mute);margin-left:3px;}
+.op-focus-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;}
+.op-focus-item{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.04);}
+.op-focus-item:last-child{border-bottom:none;}
+.op-focus-time{font-size:11px;color:var(--amber);font-weight:600;white-space:nowrap;min-width:62px;flex-shrink:0;}
+.op-focus-bullet{color:var(--bronze);font-size:16px;line-height:1;flex-shrink:0;}
+.op-focus-text{font-size:13px;color:var(--ink);flex:1;}
+.op-focus-meta{font-size:11px;color:var(--ink-mute);white-space:nowrap;}
+.op-focus-empty{font-size:13px;color:var(--ink-mute);padding:8px 0;font-style:italic;}
+@media(max-width:600px){.op-focus-grid{grid-template-columns:1fr;}}
+
 /* ═══ FUNNEL BUILDER ═══ */
 .funnel-map{display:flex;flex-direction:column;align-items:center;padding:4px 0 8px;}
 .funnel-block-wrap{width:100%;}
@@ -1125,57 +1150,191 @@ function renderKPIs() {
 // ═══════════════════════════════════════
 // RENDER DASHBOARD
 // ═══════════════════════════════════════
-function renderDashboard() {
+function getLastNMonths(n) {
+  const months = [];
+  const now = new Date();
+  for (let i = n-1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+  }
+  return months;
+}
+
+function getWeekStart() {
+  const now = new Date();
+  const diff = now.getDay() === 0 ? -6 : 1 - now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate() + diff);
+  mon.setHours(0, 0, 0, 0);
+  return mon;
+}
+
+async function renderDashboard() {
   const c = document.getElementById('view-dashboard');
-  if (!strategyData) { c.innerHTML = '<p style="color:#999;">Loading your strategy...</p>'; return; }
-  
-  const cols = allTextFields.filter(f=>f.col).map(f=>f.col);
-  const filled = cols.filter(col => strategyData[col]?.trim()).length;
-  const pct = Math.round((filled/cols.length)*100);
-  const kpis = strategyData.kpis || defaultKpis;
-  const entries = Object.entries(kpis);
-  const onTrack = entries.filter(([,v])=>v.status==='on-track').length;
-  const atRisk = entries.filter(([,v])=>v.status==='at-risk').length;
-  const offTrack = entries.filter(([,v])=>v.status==='off-track').length;
-  
-  const sc = (label,col) => {
-    const val = strategyData[col]||'';
-    return `<div class="summary-card"><div class="summary-label">${label}</div><div class="summary-value">${val.trim()?val:'<span class="summary-empty">Not defined yet</span>'}</div></div>`;
+  if (!strategyData) { c.innerHTML = '<p style="color:#999;">Loading...</p>'; return; }
+  c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+
+  const months = getLastNMonths(6);
+
+  // Fetch Money Flow rows
+  let mfRows = {};
+  try {
+    const { data } = await supabase.from('money_flow').select('*').eq('user_id', currentUser.id).in('month', months);
+    (data||[]).forEach(row => {
+      const p = v => Array.isArray(v) ? v : (typeof v === 'string' ? JSON.parse(v) : []);
+      mfRows[row.month] = { revenue: p(row.revenue), fixedExpenses: p(row.fixed_expenses), variableExpenses: p(row.variable_expenses) };
+    });
+  } catch(e) {}
+
+  // Fetch this week's appointments
+  let weekAppts = [];
+  try {
+    const wStart = getWeekStart();
+    const wEnd = new Date(wStart); wEnd.setDate(wEnd.getDate() + 6); wEnd.setHours(23,59,59);
+    const { data } = await supabase.from('appointments').select('*')
+      .eq('admin_id', currentUser.id).neq('status','cancelled')
+      .gte('start_at', wStart.toISOString()).lte('start_at', wEnd.toISOString())
+      .order('start_at', {ascending:true});
+    weekAppts = data || [];
+  } catch(e) {}
+
+  // Fetch open tasks from management projects
+  let weekTasks = [];
+  try {
+    const { data } = await supabase.from('projects').select('name,tasks').eq('user_id', currentUser.id);
+    (data||[]).forEach(p => {
+      (Array.isArray(p.tasks)?p.tasks:[]).filter(t=>!t.completed).forEach(t => {
+        weekTasks.push({...t, projectName: p.name});
+      });
+    });
+    weekTasks.sort((a,b) => (a.due_date||'9999').localeCompare(b.due_date||'9999'));
+    weekTasks = weekTasks.slice(0, 8);
+  } catch(e) {}
+
+  c.innerHTML = buildDashboardHTML(mfRows, months, weekAppts, weekTasks);
+}
+
+function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
+  const kpis = strategyData?.kpis || defaultKpis;
+  const offers = strategyData?.offers_data || [];
+  const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const revGoal = parseFloat(kpis.revenue?.target) || 0;
+
+  const fmt = n => {
+    const v = parseFloat(n)||0;
+    const abs = Math.abs(v);
+    const s = abs >= 1000 ? (abs/1000).toFixed(1)+'k' : abs.toFixed(0);
+    return (v < 0 ? '-' : '') + '€' + s;
   };
-  
-  const kpiLabels = {revenue:'Revenue',leads:'Leads',calls:'Calls',conversionRate:'Conversion Rate',cac:'CAC',emailGrowth:'Email Growth'};
-  
-  c.innerHTML = `
-    <div class="completion-bar-wrap animate-in">
-      <div class="completion-header"><span class="completion-label">Strategy Completion</span><span class="completion-pct-text">${pct}%</span></div>
-      <div class="completion-track"><div class="completion-fill" style="width:${pct}%;"></div></div>
+
+  // ── Financial table columns ────────────────────────
+  let totRevGoal=0, totRevActual=0, totExp=0;
+  const mfCols = months.map(m => {
+    const md = mfRows[m] || {};
+    const rev = (md.revenue||[]).reduce((s,r)=>s+(parseFloat(r.amount)||0), 0);
+    const exp = [...(md.fixedExpenses||[]),...(md.variableExpenses||[])].reduce((s,e)=>s+(parseFloat(e.amount)||0), 0);
+    const [y, mo] = m.split('-').map(Number);
+    totRevGoal += revGoal; totRevActual += rev; totExp += exp;
+    return { label:`${MONTHS_SHORT[mo-1]} '${String(y).slice(2)}`, rev, exp, profit:rev-exp, hasData:rev>0||exp>0 };
+  });
+  const totProfit = totRevActual - totExp;
+
+  const valCell = (val, hasData, goal) => {
+    if (!hasData && !val) return `<td class="op-cell-empty">—</td>`;
+    const color = goal ? (val>=goal?'var(--green)':val>=goal*0.8?'var(--amber)':'var(--red)') : '';
+    return `<td style="${color?'color:'+color+';font-weight:500;':''}">${fmt(val)}</td>`;
+  };
+
+  let html = `
+  <div class="op-section-title">Financial Overview</div>
+  <div class="op-table-wrap">
+  <table class="op-table">
+    <thead><tr>
+      <th class="op-row-label"></th>
+      ${mfCols.map(c=>`<th>${c.label}</th>`).join('')}
+      <th class="op-total-col">Total</th>
+    </tr></thead>
+    <tbody>
+      <tr class="op-row-muted">
+        <td class="op-row-label">Revenue Goal</td>
+        ${mfCols.map(()=>`<td>${revGoal?fmt(revGoal):'—'}</td>`).join('')}
+        <td class="op-total-col">${revGoal?fmt(totRevGoal):'—'}</td>
+      </tr>
+      <tr>
+        <td class="op-row-label">Revenue Actual</td>
+        ${mfCols.map(c=>valCell(c.rev, c.hasData, revGoal||null)).join('')}
+        <td class="op-total-col" style="${totRevActual?'font-weight:700;':''}${totRevActual&&revGoal?(totRevActual>=totRevGoal?'color:var(--green);':'color:var(--amber);'):''}">${totRevActual?fmt(totRevActual):'—'}</td>
+      </tr>
+      <tr>
+        <td class="op-row-label">Expenses</td>
+        ${mfCols.map(c=>c.exp?`<td style="color:var(--amber);">${fmt(c.exp)}</td>`:`<td class="op-cell-empty">—</td>`).join('')}
+        <td class="op-total-col" style="${totExp?'color:var(--amber);font-weight:700;':''}">${totExp?fmt(totExp):'—'}</td>
+      </tr>
+      <tr class="op-profit-row">
+        <td class="op-row-label">Profit</td>
+        ${mfCols.map(c=>c.hasData?`<td style="color:${c.profit>=0?'var(--green)':'var(--red)'};">${fmt(c.profit)}</td>`:`<td class="op-cell-empty">—</td>`).join('')}
+        <td class="op-total-col" style="color:${totProfit>=0?'var(--green)':'var(--red)'};font-weight:700;">${totRevActual||totExp?fmt(totProfit):'—'}</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="op-section-title">Marketing & Sales</div>
+  <div class="op-table-wrap">
+  <table class="op-table">
+    <thead><tr>
+      <th class="op-row-label"></th>
+      <th>Goal</th>
+      <th>Actual (6 mo)</th>
+    </tr></thead>
+    <tbody>
+      <tr class="op-row-muted">
+        <td class="op-row-label">Leads</td>
+        <td>${kpis.leads?.target||'—'}</td>
+        <td style="${kpis.leads?.current&&kpis.leads?.target?(parseFloat(kpis.leads.current)>=parseFloat(kpis.leads.target)?'color:var(--green);':'color:var(--amber);'):''}">${kpis.leads?.current||'—'}</td>
+      </tr>
+      ${offers.map(o => {
+        let count=0, rev=0;
+        Object.values(mfRows).forEach(md => {
+          (md.revenue||[]).forEach(r => { if(r.description===o.name){count++;rev+=parseFloat(r.amount)||0;} });
+        });
+        return `<tr>
+          <td class="op-row-label">${escHtml(o.name||'Unnamed')}<span class="op-price-tag">€${o.price}</span></td>
+          <td>—</td>
+          <td>${count>0?`<strong>${count}</strong> sales · ${fmt(rev)}`:'—'}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table>
+  </div>
+
+  <div class="op-section-title">Current Focus</div>
+  <div class="op-focus-grid">
+    <div class="summary-card">
+      <div class="summary-label" style="margin-bottom:10px;">This Week's Appointments</div>
+      ${weekAppts.length ? weekAppts.map(a => {
+        const d = new Date(a.start_at);
+        const DAY = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const t = `${DAY[d.getDay()]} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        return `<div class="op-focus-item">
+          <span class="op-focus-time">${t}</span>
+          <span class="op-focus-text">${escHtml(a.service_name||a.client_name||'Appointment')}</span>
+          ${a.client_name?`<span class="op-focus-meta">· ${escHtml(a.client_name)}</span>`:''}
+        </div>`;
+      }).join('') : `<div class="op-focus-empty">No appointments this week</div>`}
     </div>
-    <div class="kpi-summary animate-in" style="animation-delay:0.05s;">
-      <div class="kpi-summary-card" style="background:#3D5A4C;"><div class="kpi-summary-num">${onTrack}</div><div class="kpi-summary-label">On Track</div></div>
-      <div class="kpi-summary-card" style="background:#C4873A;"><div class="kpi-summary-num">${atRisk}</div><div class="kpi-summary-label">At Risk</div></div>
-      <div class="kpi-summary-card" style="background:#A0522D;"><div class="kpi-summary-num">${offTrack}</div><div class="kpi-summary-label">Off Track</div></div>
+    <div class="summary-card">
+      <div class="summary-label" style="margin-bottom:10px;">Open Tasks</div>
+      ${weekTasks.length ? weekTasks.map(t => `<div class="op-focus-item">
+        <span class="op-focus-bullet">·</span>
+        <span class="op-focus-text">${escHtml(t.title||'Task')}</span>
+        <span class="op-focus-meta">${escHtml(t.projectName||'')}</span>
+      </div>`).join('') : `<div class="op-focus-empty">No open tasks</div>`}
     </div>
-    <div class="strategy-grid animate-in" style="animation-delay:0.1s;">
-      ${sc('Vision','vision')}${sc('Goals','goals')}${sc('Offers','offers')}${sc('Ideal Client','ideal_client')}
-      ${sc('Pricing','pricing')}${sc('Positioning','positioning')}${sc('Revenue Streams','revenue_streams')}${sc('Financial Target','financial_target')}
-    </div>
-    <div class="animate-in" style="animation-delay:0.15s;margin-bottom:16px;">
-      <div class="dash-section-label">Current Focus</div>
-      <div class="strategy-grid">
-        ${sc('Quarterly Goals','quarterly_goals')}${sc('Weekly Actions','weekly_actions')}${sc('Lead Generation','lead_generation')}${sc('Sales Pipeline','sales_pipeline')}
-      </div>
-    </div>
-    <div class="animate-in" style="animation-delay:0.2s;">
-      <div class="dash-section-label">Key Metrics</div>
-      <div class="strategy-grid">
-        ${entries.map(([key,val])=>{
-          const kpct = val.target&&val.current?Math.min(100,Math.round((parseFloat(val.current)/parseFloat(val.target))*100)):0;
-          const s = statusMap[val.status];
-          return `<div class="dash-kpi-card"><div class="dash-kpi-header"><span class="dash-kpi-label">${kpiLabels[key]||key}</span><span class="dash-kpi-status" style="background:${s.bg};">${s.label}</span></div><div class="dash-kpi-value">${val.current||'—'} <span class="dash-kpi-target">/ ${val.target||'—'}</span></div><div class="dash-kpi-bar"><div class="dash-kpi-bar-fill" style="width:${kpct}%;background:${s.bg};"></div></div></div>`;
-        }).join('')}
-      </div>
-    </div>
+  </div>
   `;
+
+  return html;
 }
 
 // ═══════════════════════════════════════
