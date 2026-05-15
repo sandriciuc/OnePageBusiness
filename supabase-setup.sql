@@ -42,9 +42,13 @@ CREATE TABLE IF NOT EXISTS strategies (
     "cac": {"current": "", "target": "", "status": "on-track"},
     "emailGrowth": {"current": "", "target": "", "status": "on-track"}
   }'::jsonb,
+  offers_data JSONB DEFAULT '[]'::jsonb,
   updated_at TIMESTAMPTZ DEFAULT now(),
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Add offers_data to existing strategies tables (safe if column already exists)
+ALTER TABLE strategies ADD COLUMN IF NOT EXISTS offers_data JSONB DEFAULT '[]'::jsonb;
 
 -- 3. Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
