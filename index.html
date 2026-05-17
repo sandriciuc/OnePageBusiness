@@ -210,6 +210,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .mgmt-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
 .mgmt-tab-overview{color:var(--amber) !important;border-right:1px solid var(--cream-dark);}
 .mgmt-tab-overview.active{color:var(--amber) !important;border-bottom-color:var(--amber);}
+.mgmt-tab-ideas{color:var(--bronze) !important;border-right:1px solid var(--cream-dark);}
+.mgmt-tab-ideas.active{color:var(--bronze) !important;border-bottom-color:var(--bronze);}
+.idea-item{background:var(--white);border:1px solid var(--cream-dark);border-radius:10px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;}
+.idea-input{flex:1;border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);resize:vertical;min-height:44px;outline:none;line-height:1.5;}
+.idea-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.idea-move-select{border:1px solid var(--cream-dark);border-radius:6px;padding:5px 8px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--green);background:var(--cream);cursor:pointer;max-width:190px;}
+.idea-move-select:focus{outline:none;border-color:var(--green);}
 .mgmt-tab-move{background:transparent;border:none;color:#ccc;cursor:pointer;font-size:9px;padding:0 6px;line-height:1;transition:color 0.15s;align-self:stretch;display:flex;align-items:center;}
 .mgmt-tab-move:hover{color:var(--green);background:rgba(61,90,76,0.05);}
 .mgmt-new-tab{flex-shrink:0;padding:10px 16px;border:none;border-left:1px solid var(--cream-dark);background:transparent;color:var(--green);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;letter-spacing:0.03em;text-transform:uppercase;transition:background 0.2s;}
@@ -699,8 +706,9 @@ async function initApp(user) {
       strategyData.offers_data = strat.offers_data ? (typeof strat.offers_data === 'string' ? JSON.parse(strat.offers_data) : strat.offers_data) : [];
       strategyData.funnel_data = strat.funnel_data ? (typeof strat.funnel_data === 'string' ? JSON.parse(strat.funnel_data) : strat.funnel_data) : [];
       strategyData.dashboard_products = strat.dashboard_products ? (typeof strat.dashboard_products === 'string' ? JSON.parse(strat.dashboard_products) : strat.dashboard_products) : [];
+      strategyData.ideas = strat.ideas ? (typeof strat.ideas === 'string' ? JSON.parse(strat.ideas) : strat.ideas) : [];
     } else {
-      strategyData = { kpis: {...defaultKpis}, offers_data: [], dashboard_products: [] };
+      strategyData = { kpis: {...defaultKpis}, offers_data: [], dashboard_products: [], ideas: [] };
       allTextFields.forEach(f => { if (f.col) strategyData[f.col] = ''; });
     }
 
@@ -822,6 +830,7 @@ function triggerSave() {
       `${i+1}. ${b.label||'Step'}${b.offer?' → '+b.offer:''}${b.channel?' ['+b.channel+']':''}${b.action?'\n   '+b.action:''}`
     ).join('\n');
     updateObj.dashboard_products = strategyData.dashboard_products || [];
+    updateObj.ideas = strategyData.ideas || [];
 
     await supabase.from('strategies').update(updateObj).eq('id', strategyId);
     
@@ -1534,6 +1543,7 @@ async function viewClient(userId) {
   strategyData.kpis = { ...defaultKpis, ...strat.kpis };
   strategyData.offers_data = strat.offers_data ? (typeof strat.offers_data === 'string' ? JSON.parse(strat.offers_data) : strat.offers_data) : [];
   strategyData.dashboard_products = strat.dashboard_products ? (typeof strat.dashboard_products === 'string' ? JSON.parse(strat.dashboard_products) : strat.dashboard_products) : [];
+  strategyData.ideas = strat.ideas ? (typeof strat.ideas === 'string' ? JSON.parse(strat.ideas) : strat.ideas) : [];
   isViewingClient = true;
   viewingClientName = profile?.full_name || profile?.email || 'Client';
 
@@ -1564,6 +1574,7 @@ function drawManagement() {
   let html = '<div class="mgmt-tabbar">';
   html += `<div class="mgmt-tab-fixed">
     <button class="mgmt-tab mgmt-tab-overview${activeMgmtTab==='overview'?' active':''}" onclick="setMgmtTab('overview')">Overview</button>
+    <button class="mgmt-tab mgmt-tab-ideas${activeMgmtTab==='ideas'?' active':''}" onclick="setMgmtTab('ideas')">💡 Ideas</button>
   </div>
   <div class="mgmt-tab-scroll">`;
   projectsData.forEach((p,i) => {
@@ -1581,7 +1592,7 @@ function drawManagement() {
   html += `</div>
   <div class="mgmt-tab-fixed"><button class="mgmt-new-tab" onclick="createProject()">+ New Project</button></div>
   </div>`;
-  html += activeMgmtTab==='overview' ? drawOverviewContent() : (projectsData.find(p=>p.id===activeMgmtTab) ? drawProjectContent(projectsData.find(p=>p.id===activeMgmtTab)) : '');
+  html += activeMgmtTab==='overview' ? drawOverviewContent() : activeMgmtTab==='ideas' ? drawIdeasContent() : (projectsData.find(p=>p.id===activeMgmtTab) ? drawProjectContent(projectsData.find(p=>p.id===activeMgmtTab)) : '');
   c.innerHTML = html;
 }
 
@@ -1654,6 +1665,73 @@ function drawProjectContent(p) {
   }
   html += `<div class="add-task-row"><button class="add-task-btn" onclick="addTask('${p.id}')">+ Add task</button></div></div>`;
   return html;
+}
+
+function drawIdeasContent() {
+  const ideas = strategyData?.ideas || [];
+  let html = `<div style="margin-bottom:20px;">
+    <div class="section-layer">Ideas</div>
+    <h3 style="font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--ink);margin-bottom:4px;">Idea Capture</h3>
+    <p style="font-size:13px;color:var(--ink-mute);">Write down ideas and move them to a project when ready.</p>
+  </div>
+  <div style="margin-bottom:16px;">
+    <button class="btn-outline" onclick="addIdea()" style="font-size:13px;">+ Add Idea</button>
+  </div>`;
+  if (!ideas.length) {
+    html += `<div style="text-align:center;padding:40px;color:var(--ink-mute);font-size:13px;">No ideas yet. Add your first one above.</div>`;
+  } else {
+    const projectOpts = projectsData.map(p=>`<option value="${p.id}">${escHtml(p.name||'Untitled')}</option>`).join('');
+    html += '<div style="display:flex;flex-direction:column;gap:10px;">';
+    ideas.forEach(idea => {
+      html += `<div class="idea-item">
+        <textarea class="idea-input" rows="2" placeholder="Write your idea..."
+          onblur="updateIdea('${idea.id}',this.value)">${escHtml(idea.text||'')}</textarea>
+        <div class="idea-actions">
+          ${projectsData.length ? `
+            <select class="idea-move-select" onchange="moveIdeaToProject('${idea.id}',this.value);this.value=''">
+              <option value="">→ Move to project</option>
+              ${projectOpts}
+            </select>` : `<span style="font-size:12px;color:var(--ink-mute);">No projects yet</span>`}
+          <button class="task-del" onclick="deleteIdea('${idea.id}')">×</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+  return html;
+}
+
+function addIdea() {
+  if (!strategyData.ideas) strategyData.ideas = [];
+  strategyData.ideas.unshift({ id: crypto.randomUUID(), text: '', created_at: new Date().toISOString() });
+  triggerSave();
+  drawManagement();
+}
+
+function updateIdea(id, text) {
+  const idea = (strategyData.ideas || []).find(i => i.id === id);
+  if (idea) { idea.text = text; triggerSave(); }
+}
+
+function deleteIdea(id) {
+  strategyData.ideas = (strategyData.ideas || []).filter(i => i.id !== id);
+  triggerSave();
+  drawManagement();
+}
+
+async function moveIdeaToProject(ideaId, projectId) {
+  if (!projectId) return;
+  const idea = (strategyData.ideas || []).find(i => i.id === ideaId);
+  if (!idea) return;
+  const idx = projectsData.findIndex(p => p.id === projectId);
+  if (idx === -1) return;
+  const task = { id: crypto.randomUUID(), title: idea.text || 'Idea', completed: false, due_date: '' };
+  projectsData[idx].tasks = [...(projectsData[idx].tasks || []), task];
+  await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
+  strategyData.ideas = (strategyData.ideas || []).filter(i => i.id !== ideaId);
+  triggerSave();
+  activeMgmtTab = projectId;
+  drawManagement();
 }
 
 function setMgmtTab(id) { activeMgmtTab = id; drawManagement(); }
