@@ -1600,6 +1600,15 @@ function dashUpdateProductGoal(id, val) {
 
 async function dashUpdateLeads(month, val) {
   const leads = parseInt(val) || 0;
+  // Keep in-memory mfData in sync so mfSaveMonth doesn't overwrite with stale extras
+  if (mfData?.months?.[month]) {
+    if (!mfData.months[month].extras) mfData.months[month].extras = {};
+    mfData.months[month].extras.leads = leads;
+    // Let mfSaveMonth handle the full save (extras included now)
+    mfSaveMonth(month);
+    return;
+  }
+  // Month not in memory — update only extras column directly
   try {
     const { data: existing } = await supabase.from('money_flow')
       .select('id,extras').eq('user_id', currentUser.id).eq('month', month).maybeSingle();
@@ -2322,6 +2331,7 @@ async function mfLoad() {
         revenue: parse(row.revenue),
         fixedExpenses: parse(row.fixed_expenses),
         variableExpenses: parse(row.variable_expenses),
+        extras: row.extras ? (typeof row.extras === 'string' ? JSON.parse(row.extras) : row.extras) : {},
       };
     });
   } catch(e) {
@@ -2331,7 +2341,7 @@ async function mfLoad() {
     const now = new Date();
     mfMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   }
-  if (!mfData.months[mfMonth]) mfData.months[mfMonth] = { revenue: [], fixedExpenses: [], variableExpenses: [] };
+  if (!mfData.months[mfMonth]) mfData.months[mfMonth] = { revenue: [], fixedExpenses: [], variableExpenses: [], extras: {} };
 }
 
 function mfTriggerSave() {
@@ -2348,6 +2358,7 @@ async function mfSaveMonth(month) {
     revenue: md.revenue || [],
     fixed_expenses: md.fixedExpenses || [],
     variable_expenses: md.variableExpenses || [],
+    extras: md.extras || {},
   };
   try {
     const { data } = await supabase.from('money_flow')
@@ -2360,7 +2371,7 @@ async function mfSaveMonth(month) {
 }
 
 function mfGetMonth(m) {
-  if (!mfData.months[m]) mfData.months[m] = { revenue: [], fixedExpenses: [], variableExpenses: [] };
+  if (!mfData.months[m]) mfData.months[m] = { revenue: [], fixedExpenses: [], variableExpenses: [], extras: {} };
   return mfData.months[m];
 }
 
