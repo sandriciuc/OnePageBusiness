@@ -1713,7 +1713,9 @@ function drawIdeasContent() {
 
 async function addIdea() {
   const { data, error } = await supabase.from('ideas').insert({ user_id: currentUser.id, text: '' }).select().single();
-  if (data) { ideasData.unshift(data); drawManagement(); }
+  if (error) { console.error('addIdea:', error); alert('Could not create idea.\n\nPlease run the ideas table SQL in Supabase first (see supabase-setup.sql section 12).'); return; }
+  if (data) ideasData.unshift(data);
+  drawManagement();
 }
 
 async function updateIdea(id, text) {
@@ -1757,7 +1759,8 @@ async function moveTaskTo(fromProjectId, taskId, targetId) {
   await supabase.from('projects').update({ tasks: projectsData[fromIdx].tasks }).eq('id', fromProjectId);
 
   if (targetId === 'ideas') {
-    const { data: newIdea } = await supabase.from('ideas').insert({ user_id: currentUser.id, text: task.title || '' }).select().single();
+    const { data: newIdea, error: ideaErr } = await supabase.from('ideas').insert({ user_id: currentUser.id, text: task.title || '' }).select().single();
+    if (ideaErr) console.error('moveTaskTo ideas:', ideaErr);
     if (newIdea) ideasData.unshift(newIdea);
     activeMgmtTab = 'ideas';
   } else {
