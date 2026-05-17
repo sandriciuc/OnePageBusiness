@@ -193,6 +193,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .task-item.overdue .task-due-input{border-color:#C4873A;color:#C4873A;background:rgba(196,135,58,0.08);}
 .task-del{background:none;border:none;color:#ddd;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;}
 .task-del:hover{color:var(--red);}
+.task-move-select{border:1px solid var(--cream-dark);border-radius:6px;padding:3px 6px;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--green);background:var(--cream);cursor:pointer;flex-shrink:0;max-width:130px;}
+.task-move-select:focus{outline:none;border-color:var(--green);}
 .add-task-row{padding:10px 24px 16px;}
 .add-task-btn{background:none;border:none;color:var(--green);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;}
 .add-task-btn:hover{color:var(--green-light);}
@@ -1651,6 +1653,7 @@ function drawProjectContent(p) {
     html += '<div class="task-list">';
     ordered.forEach(t => {
       const overdue = p.due_date && t.due_date && t.due_date > p.due_date;
+      const otherProjects = projectsData.filter(pr=>pr.id!==p.id);
       html += `<div class="task-item${t.completed?' done':''}${overdue?' overdue':''}">
         <input type="checkbox" class="task-checkbox" ${t.completed?'checked':''}
           onchange="toggleTask('${p.id}','${t.id}',this.checked)">
@@ -1658,6 +1661,11 @@ function drawProjectContent(p) {
           onblur="updateTask('${p.id}','${t.id}','title',this.value)">
         <input type="date" class="task-due-input" value="${t.due_date||''}"
           onchange="updateTask('${p.id}','${t.id}','due_date',this.value);drawManagement()">
+        <select class="task-move-select" onchange="moveTaskTo('${p.id}','${t.id}',this.value);this.value=''">
+          <option value="">→ Move</option>
+          <option value="ideas">💡 Ideas</option>
+          ${otherProjects.map(pr=>`<option value="${pr.id}">${escHtml(pr.name||'Untitled')}</option>`).join('')}
+        </select>
         <button class="task-del" onclick="deleteTask('${p.id}','${t.id}')" title="Delete">×</button>
       </div>`;
     });
@@ -1731,6 +1739,33 @@ async function moveIdeaToProject(ideaId, projectId) {
   strategyData.ideas = (strategyData.ideas || []).filter(i => i.id !== ideaId);
   triggerSave();
   activeMgmtTab = projectId;
+  drawManagement();
+}
+
+async function moveTaskTo(fromProjectId, taskId, targetId) {
+  if (!targetId) return;
+  const fromIdx = projectsData.findIndex(p => p.id === fromProjectId);
+  if (fromIdx === -1) return;
+  const task = (projectsData[fromIdx].tasks || []).find(t => t.id === taskId);
+  if (!task) return;
+
+  // Remove from source project
+  projectsData[fromIdx].tasks = projectsData[fromIdx].tasks.filter(t => t.id !== taskId);
+  await supabase.from('projects').update({ tasks: projectsData[fromIdx].tasks }).eq('id', fromProjectId);
+
+  if (targetId === 'ideas') {
+    if (!strategyData.ideas) strategyData.ideas = [];
+    strategyData.ideas.unshift({ id: crypto.randomUUID(), text: task.title || '', created_at: new Date().toISOString() });
+    triggerSave();
+    activeMgmtTab = 'ideas';
+  } else {
+    const toIdx = projectsData.findIndex(p => p.id === targetId);
+    if (toIdx !== -1) {
+      projectsData[toIdx].tasks = [...(projectsData[toIdx].tasks || []), { id: crypto.randomUUID(), title: task.title || '', completed: false, due_date: task.due_date || '' }];
+      await supabase.from('projects').update({ tasks: projectsData[toIdx].tasks }).eq('id', targetId);
+    }
+    activeMgmtTab = targetId;
+  }
   drawManagement();
 }
 
