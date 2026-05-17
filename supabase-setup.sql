@@ -268,3 +268,57 @@ CREATE TRIGGER money_flow_updated_at
 
 -- Add extras column to money_flow for per-month metadata (e.g. leads count)
 ALTER TABLE money_flow ADD COLUMN IF NOT EXISTS extras JSONB DEFAULT '{}'::jsonb;
+
+-- 13. Clients table
+CREATE TABLE IF NOT EXISTS clients (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL DEFAULT 'New Client',
+  email TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  company TEXT DEFAULT '',
+  project_notes TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE clients ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own clients" ON clients;
+CREATE POLICY "Users can manage own clients"
+  ON clients FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS clients_updated_at ON clients;
+CREATE TRIGGER clients_updated_at
+  BEFORE UPDATE ON clients
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- 14. Client proposals table
+CREATE TABLE IF NOT EXISTS client_proposals (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+  client_name TEXT DEFAULT '',
+  offer_name TEXT DEFAULT '',
+  price DECIMAL(10,2) DEFAULT 0,
+  status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'accepted', 'declined')),
+  date DATE,
+  notes TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE client_proposals ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own proposals" ON client_proposals;
+CREATE POLICY "Users can manage own proposals"
+  ON client_proposals FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS client_proposals_updated_at ON client_proposals;
+CREATE TRIGGER client_proposals_updated_at
+  BEFORE UPDATE ON client_proposals
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();

@@ -391,6 +391,48 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .funnel-color-dot:hover{transform:scale(1.3);}
 .funnel-color-dot.active{border-color:rgba(0,0,0,0.35);}
 @media(max-width:600px){.funnel-block-body{grid-template-columns:1fr;}}
+
+/* ═══ CLIENTS ═══ */
+.clients-tabbar{display:flex;gap:0;border-bottom:2px solid var(--cream-dark);margin-bottom:20px;}
+.clients-tab{padding:11px 20px;border:none;border-bottom:3px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:#999;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s;margin-bottom:-2px;}
+.clients-tab:hover{color:var(--ink-soft);}
+.clients-tab.active{color:var(--green);border-bottom-color:var(--green);font-weight:600;}
+.client-card{background:var(--white);border:1px solid rgba(0,0,0,0.07);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color 0.2s;}
+.client-card:hover{border-color:rgba(61,90,76,0.2);}
+.client-card-header{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;user-select:none;}
+.client-avatar{width:40px;height:40px;border-radius:50%;background:var(--green);color:var(--cream);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex-shrink:0;font-family:'Playfair Display',serif;}
+.client-card-meta{flex:1;min-width:0;}
+.client-card-name{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px;}
+.client-card-detail{font-size:12px;color:var(--ink-mute);}
+.client-card-arrow{color:#bbb;transition:transform 0.2s;font-size:18px;flex-shrink:0;line-height:1;}
+.client-card.expanded .client-card-arrow{transform:rotate(90deg);}
+.client-body{display:none;padding:0 20px 20px;border-top:1px solid var(--cream-dark);}
+.client-card.expanded .client-body{display:block;}
+.client-fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;}
+.client-field-label{font-size:10px;font-weight:600;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+.client-field-input{width:100%;border:1px solid var(--cream-dark);border-radius:7px;padding:8px 11px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--cream);outline:none;transition:border-color 0.2s;}
+.client-field-input:focus{border-color:var(--green);background:var(--white);}
+.client-field-full{grid-column:1/-1;}
+.client-section-title{font-size:11px;font-weight:700;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.1em;margin:18px 0 10px;padding-top:14px;border-top:1px solid var(--cream-dark);}
+.client-history-empty{font-size:13px;color:var(--ink-mute);font-style:italic;padding:6px 0;}
+.client-history-table{width:100%;border-collapse:collapse;font-size:12px;}
+.client-history-table th{text-align:left;padding:6px 10px;background:var(--cream);color:var(--ink-mute);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;}
+.client-history-table td{padding:7px 10px;border-top:1px solid var(--cream-dark);}
+.client-history-table tr:hover td{background:rgba(61,90,76,0.02);}
+.proposal-status{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.status-draft{background:rgba(136,136,136,0.12);color:#888;}
+.status-sent{background:rgba(196,135,58,0.12);color:var(--amber);}
+.status-accepted{background:rgba(61,90,76,0.12);color:var(--green);}
+.status-declined{background:rgba(192,57,43,0.1);color:var(--red);}
+.proposal-table{width:100%;border-collapse:collapse;font-size:12px;}
+.proposal-table th{text-align:left;padding:8px 12px;background:var(--cream);color:var(--ink-mute);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.06em;white-space:nowrap;}
+.proposal-table td{padding:8px 12px;border-top:1px solid var(--cream-dark);vertical-align:middle;}
+.proposal-table tr:hover td{background:rgba(61,90,76,0.02);}
+.proposal-inline{border:none;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);outline:none;width:100%;}
+.proposal-inline:focus{background:var(--cream);border-radius:4px;padding:2px 5px;}
+.proposal-status-select{border:1px solid var(--cream-dark);border-radius:6px;padding:3px 7px;font-family:'DM Sans',sans-serif;font-size:11px;background:var(--cream);color:var(--ink);cursor:pointer;outline:none;}
+.clients-add-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:var(--green);color:var(--cream);border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.2s;}
+.clients-add-btn:hover{background:var(--green-light);}
 </style>
 </head>
 <body>
@@ -482,6 +524,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
     <div id="view-management" class="view-section"></div>
     <div id="view-calendar" class="view-section"></div>
     <div id="view-moneyflow" class="view-section"></div>
+    <div id="view-clients" class="view-section"></div>
   </main>
 
   <footer class="footer">ONE PAGE BUSINESS · Clarity · Systems · Results</footer>
@@ -674,6 +717,7 @@ async function handleLogout() {
   currentUser = null; currentProfile = null; strategyData = null;
   mfData = null; mfLoaded = false; mfMonth = null;
   ideasData = [];
+  clientsData = []; proposalsData = []; expandedClientId = null; clientRevenueCache = {};
   showAuth('login');
 }
 
@@ -780,6 +824,10 @@ function buildNav() {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         Money Flow
       </button>
+      <button class="nav-btn" data-view="clients" onclick="switchView('clients')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Clients
+      </button>
       <button class="nav-btn" data-view="admin" onclick="switchView('admin')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Users
@@ -806,6 +854,7 @@ function switchView(viewId) {
   else if (viewId === 'management') renderManagement();
   else if (viewId === 'calendar') renderCalendar();
   else if (viewId === 'moneyflow') renderMoneyFlow();
+  else if (viewId === 'clients') renderClients();
 }
 
 // ═══════════════════════════════════════
@@ -1559,6 +1608,11 @@ async function viewClient(userId) {
 let projectsData = [];
 let ideasData = [];
 let activeMgmtTab = 'overview';
+let clientsData = [];
+let proposalsData = [];
+let expandedClientId = null;
+let activeClientsTab = 'clients';
+let clientRevenueCache = {};
 
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -2731,6 +2785,281 @@ function mfExport() {
   a.href = url; a.download = `money-flow-${mfMonth}.txt`;
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════
+// CLIENTS
+// ═══════════════════════════════════════
+async function renderClients() {
+  const c = document.getElementById('view-clients');
+  c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
+  const [{ data: clients, error: ce }, { data: proposals, error: pe }] = await Promise.all([
+    supabase.from('clients').select('*').eq('user_id', currentUser.id).order('created_at', {ascending: false}),
+    supabase.from('client_proposals').select('*').eq('user_id', currentUser.id).order('date', {ascending: false})
+  ]);
+  if (ce) { c.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);">Could not load clients.<br><small>${ce.message}</small><br><br><small style="color:var(--ink-mute);">Make sure you have run the Clients table SQL in Supabase.</small></div>`; return; }
+  clientsData = clients || [];
+  proposalsData = proposals || [];
+  drawClients();
+}
+
+function drawClients() {
+  const c = document.getElementById('view-clients');
+  let html = `<div class="section-header">
+    <div class="section-layer">Business</div>
+    <div class="section-title">Clients</div>
+    <div class="section-sub">Manage your clients, proposals and purchase history.</div>
+  </div>
+  <div class="clients-tabbar">
+    <button class="clients-tab${activeClientsTab==='clients'?' active':''}" onclick="activeClientsTab='clients';drawClients()">Clients</button>
+    <button class="clients-tab${activeClientsTab==='offers'?' active':''}" onclick="activeClientsTab='offers';drawClients()">Offers &amp; Proposals</button>
+  </div>`;
+  html += activeClientsTab === 'clients' ? drawClientsContent() : drawProposalsContent();
+  c.innerHTML = html;
+}
+
+function drawClientsContent() {
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <span style="font-size:13px;color:var(--ink-mute);">${clientsData.length} client${clientsData.length !== 1 ? 's' : ''}</span>
+    <button class="clients-add-btn" onclick="addClient()">+ Add Client</button>
+  </div>`;
+  if (clientsData.length === 0) {
+    html += `<div style="text-align:center;padding:60px 20px;color:var(--ink-mute);">
+      <div style="font-size:36px;margin-bottom:12px;">👤</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px;">No clients yet</div>
+      <div style="font-size:13px;">Add your first client to track their history and proposals.</div>
+    </div>`;
+    return html;
+  }
+  clientsData.forEach(cl => {
+    const initials = (cl.name || 'C').split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
+    const isExpanded = expandedClientId === cl.id;
+    const clientProposals = proposalsData.filter(p => p.client_id === cl.id);
+    const revenue = clientRevenueCache[cl.id] || null;
+    html += `<div class="client-card${isExpanded ? ' expanded' : ''}">
+      <div class="client-card-header" onclick="toggleClient('${cl.id}')">
+        <div class="client-avatar">${initials}</div>
+        <div class="client-card-meta">
+          <div class="client-card-name">${escHtml(cl.name || 'Unnamed Client')}</div>
+          <div class="client-card-detail">${escHtml(cl.email || '')}${cl.company ? ' · ' + escHtml(cl.company) : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+          ${clientProposals.length > 0 ? `<span style="font-size:11px;color:var(--amber);font-weight:600;">${clientProposals.length} offer${clientProposals.length > 1 ? 's' : ''}</span>` : ''}
+          <button class="task-del" onclick="event.stopPropagation();deleteClient('${cl.id}')" title="Delete client">×</button>
+          <span class="client-card-arrow">›</span>
+        </div>
+      </div>`;
+    if (isExpanded) {
+      html += `<div class="client-body">
+        <div class="client-fields-grid">
+          <div>
+            <div class="client-field-label">Full Name</div>
+            <input class="client-field-input" type="text" value="${escHtml(cl.name || '')}" placeholder="Client name" onblur="updateClient('${cl.id}','name',this.value)">
+          </div>
+          <div>
+            <div class="client-field-label">Email</div>
+            <input class="client-field-input" type="email" value="${escHtml(cl.email || '')}" placeholder="email@example.com" onblur="updateClient('${cl.id}','email',this.value)">
+          </div>
+          <div>
+            <div class="client-field-label">Phone</div>
+            <input class="client-field-input" type="text" value="${escHtml(cl.phone || '')}" placeholder="+40..." onblur="updateClient('${cl.id}','phone',this.value)">
+          </div>
+          <div>
+            <div class="client-field-label">Company</div>
+            <input class="client-field-input" type="text" value="${escHtml(cl.company || '')}" placeholder="Company name" onblur="updateClient('${cl.id}','company',this.value)">
+          </div>
+          <div class="client-field-full">
+            <div class="client-field-label">Project / Scope</div>
+            <textarea class="client-field-input" rows="3" placeholder="Describe the project or scope of work…" onblur="updateClient('${cl.id}','project_notes',this.value)">${escHtml(cl.project_notes || '')}</textarea>
+          </div>
+        </div>
+        <div class="client-section-title">Purchase History (from Money Flow)</div>`;
+      if (revenue === null) {
+        html += `<div class="client-history-empty" id="cl-rev-${cl.id}">Loading…</div>`;
+      } else if (revenue.length === 0) {
+        html += `<div class="client-history-empty">No revenue entries found for "${escHtml(cl.name || 'this client')}" in Money Flow.<br><small style="font-style:normal;">Tip: revenue entries whose description contains this client's name will appear here.</small></div>`;
+      } else {
+        const totalRevenue = revenue.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+        html += `<table class="client-history-table">
+          <thead><tr><th>Month</th><th>Description</th><th>Category</th><th style="text-align:right;">Amount</th></tr></thead>
+          <tbody>${revenue.map(r => `<tr>
+            <td>${escHtml(r.month || '')}</td>
+            <td>${escHtml(r.description || '')}</td>
+            <td>${escHtml(r.category || '')}</td>
+            <td style="text-align:right;font-weight:600;color:var(--green);">${mfFmt(parseFloat(r.amount) || 0)}</td>
+          </tr>`).join('')}</tbody>
+          <tfoot><tr style="background:rgba(61,90,76,0.05);">
+            <td colspan="3" style="text-align:right;font-weight:600;font-size:11px;color:var(--ink-mute);padding:7px 10px;">Total Revenue</td>
+            <td style="text-align:right;font-weight:700;color:var(--green);padding:7px 10px;">${mfFmt(totalRevenue)}</td>
+          </tr></tfoot>
+        </table>`;
+      }
+      html += `<div class="client-section-title">Offers &amp; Proposals Given</div>`;
+      if (clientProposals.length === 0) {
+        html += `<div class="client-history-empty">No offers given yet. <a href="#" style="color:var(--green);font-style:normal;font-weight:500;" onclick="event.preventDefault();activeClientsTab='offers';drawClients()">Go to Offers tab →</a></div>`;
+      } else {
+        html += `<table class="client-history-table">
+          <thead><tr><th>Date</th><th>Offer</th><th style="text-align:right;">Price</th><th>Status</th></tr></thead>
+          <tbody>${clientProposals.map(p => `<tr>
+            <td>${escHtml(p.date || '')}</td>
+            <td>${escHtml(p.offer_name || '')}</td>
+            <td style="text-align:right;">${mfFmt(parseFloat(p.price) || 0)}</td>
+            <td><span class="proposal-status status-${p.status || 'draft'}">${p.status || 'draft'}</span></td>
+          </tr>`).join('')}</tbody>
+        </table>`;
+      }
+      html += `</div>`;
+    }
+    html += `</div>`;
+  });
+  return html;
+}
+
+function drawProposalsContent() {
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <span style="font-size:13px;color:var(--ink-mute);">${proposalsData.length} proposal${proposalsData.length !== 1 ? 's' : ''}</span>
+    <button class="clients-add-btn" onclick="addProposal()">+ Add Proposal</button>
+  </div>`;
+  if (proposalsData.length === 0) {
+    html += `<div style="text-align:center;padding:60px 20px;color:var(--ink-mute);">
+      <div style="font-size:36px;margin-bottom:12px;">📋</div>
+      <div style="font-size:15px;font-weight:500;margin-bottom:6px;">No proposals yet</div>
+      <div style="font-size:13px;">Track your offers and proposals here.</div>
+    </div>`;
+    return html;
+  }
+  html += `<div style="background:var(--white);border-radius:12px;border:1px solid rgba(0,0,0,0.07);overflow:auto;">
+    <table class="proposal-table">
+      <thead><tr>
+        <th>Client</th><th>Offer / Service</th><th style="text-align:right;">Price (€)</th>
+        <th>Status</th><th>Date</th><th>Notes</th><th></th>
+      </tr></thead>
+      <tbody>`;
+  proposalsData.forEach(p => {
+    const clientOpts = clientsData.map(cl => `<option value="${cl.id}"${cl.id === p.client_id ? ' selected' : ''}>${escHtml(cl.name || 'Unnamed')}</option>`).join('');
+    html += `<tr>
+      <td>
+        <select class="proposal-status-select" style="min-width:110px;" onchange="updateProposal('${p.id}','client_id',this.value)">
+          <option value="">— no client —</option>${clientOpts}
+        </select>
+      </td>
+      <td><input class="proposal-inline" type="text" value="${escHtml(p.offer_name || '')}" placeholder="Offer name" onblur="updateProposal('${p.id}','offer_name',this.value)" style="min-width:120px;"></td>
+      <td style="text-align:right;white-space:nowrap;">
+        <input class="proposal-inline" type="number" min="0" step="0.01" value="${p.price || ''}" placeholder="0" style="text-align:right;width:70px;" onblur="updateProposal('${p.id}','price',this.value)">
+      </td>
+      <td>
+        <select class="proposal-status-select" onchange="updateProposal('${p.id}','status',this.value)">
+          <option value="draft"${p.status==='draft'?' selected':''}>Draft</option>
+          <option value="sent"${p.status==='sent'?' selected':''}>Sent</option>
+          <option value="accepted"${p.status==='accepted'?' selected':''}>Accepted</option>
+          <option value="declined"${p.status==='declined'?' selected':''}>Declined</option>
+        </select>
+      </td>
+      <td><input class="proposal-inline" type="date" value="${escHtml(p.date || '')}" onchange="updateProposal('${p.id}','date',this.value)" style="width:120px;"></td>
+      <td><input class="proposal-inline" type="text" value="${escHtml(p.notes || '')}" placeholder="Notes…" onblur="updateProposal('${p.id}','notes',this.value)" style="min-width:120px;"></td>
+      <td><button class="task-del" onclick="deleteProposal('${p.id}')" title="Delete">×</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  return html;
+}
+
+async function toggleClient(id) {
+  if (expandedClientId === id) {
+    expandedClientId = null;
+    drawClients();
+    return;
+  }
+  expandedClientId = id;
+  drawClients();
+  if (clientRevenueCache[id] === undefined) {
+    const cl = clientsData.find(c => c.id === id);
+    if (cl) await loadClientRevenue(id, cl.name || '');
+  }
+}
+
+async function loadClientRevenue(clientId, clientName) {
+  if (!clientName.trim()) { clientRevenueCache[clientId] = []; drawClients(); return; }
+  const { data } = await supabase.from('money_flow').select('month,revenue').eq('user_id', currentUser.id);
+  const matches = [];
+  (data || []).forEach(row => {
+    (row.revenue || []).forEach(r => {
+      if ((r.description || '').toLowerCase().includes(clientName.toLowerCase())) {
+        matches.push({month: row.month, ...r});
+      }
+    });
+  });
+  matches.sort((a, b) => (b.month || '').localeCompare(a.month || ''));
+  clientRevenueCache[clientId] = matches;
+  drawClients();
+}
+
+async function addClient() {
+  const { data, error } = await supabase.from('clients').insert({
+    user_id: currentUser.id,
+    name: 'New Client',
+    email: '', phone: '', company: '', project_notes: ''
+  }).select().single();
+  if (error) { console.error('addClient:', error); alert('Could not add client.\n\nMake sure you have run the Clients SQL in Supabase first.'); return; }
+  if (data) { clientsData.unshift(data); expandedClientId = data.id; }
+  drawClients();
+}
+
+async function updateClient(id, field, value) {
+  const cl = clientsData.find(c => c.id === id);
+  if (!cl || cl[field] === value) return;
+  cl[field] = value;
+  if (field === 'name') { clientRevenueCache[id] = undefined; }
+  await supabase.from('clients').update({[field]: value}).eq('id', id);
+  if (field === 'name') drawClients();
+}
+
+async function deleteClient(id) {
+  if (!confirm('Delete this client? Their proposals will also be deleted.')) return;
+  clientsData = clientsData.filter(c => c.id !== id);
+  proposalsData = proposalsData.filter(p => p.client_id !== id);
+  if (expandedClientId === id) expandedClientId = null;
+  await supabase.from('clients').delete().eq('id', id);
+  drawClients();
+}
+
+async function addProposal() {
+  const today = new Date().toISOString().split('T')[0];
+  const firstClient = clientsData[0];
+  const { data, error } = await supabase.from('client_proposals').insert({
+    user_id: currentUser.id,
+    client_id: firstClient?.id || null,
+    client_name: firstClient?.name || '',
+    offer_name: '',
+    price: 0,
+    status: 'draft',
+    date: today,
+    notes: ''
+  }).select().single();
+  if (error) { console.error('addProposal:', error); alert('Could not add proposal.\n\nMake sure you have run the Proposals SQL in Supabase first.'); return; }
+  if (data) proposalsData.unshift(data);
+  drawClients();
+}
+
+async function updateProposal(id, field, value) {
+  const p = proposalsData.find(x => x.id === id);
+  if (!p) return;
+  if (field === 'client_id') {
+    const cl = clientsData.find(c => c.id === value);
+    p.client_id = value;
+    p.client_name = cl?.name || '';
+    await supabase.from('client_proposals').update({client_id: value || null, client_name: p.client_name}).eq('id', id);
+  } else {
+    p[field] = value;
+    const dbVal = field === 'price' ? (parseFloat(value) || 0) : value;
+    await supabase.from('client_proposals').update({[field]: dbVal}).eq('id', id);
+  }
+}
+
+async function deleteProposal(id) {
+  proposalsData = proposalsData.filter(p => p.id !== id);
+  await supabase.from('client_proposals').delete().eq('id', id);
+  drawClients();
 }
 
 // ═══════════════════════════════════════
