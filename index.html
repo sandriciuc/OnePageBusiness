@@ -2340,57 +2340,86 @@ function mfRenderOverview(monthData) {
   const { totalRevenue, totalFixed, totalVariable, totalExpenses, net } = mfCalcTotals(monthData);
   const netColor = net >= 0 ? 'var(--green)' : 'var(--red)';
 
-  // 6-month chart
-  const [y, mo] = mfMonth.split('-').map(Number);
-  const chartMonths = [];
-  for (let i = -5; i <= 0; i++) {
-    const d = new Date(y, mo - 1 + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  // Fixed Jan–Dec 2026 chart
+  const months2026 = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06',
+                      '2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'];
+  const mLabels   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const chartMonths = months2026.map((key, i) => {
     const md = mfData.months[key] || { revenue:[], fixedExpenses:[], variableExpenses:[] };
     const t = mfCalcTotals(md);
-    chartMonths.push({ key, label: d.toLocaleString('default',{month:'short'}), ...t });
-  }
+    return { key, label: mLabels[i], ...t };
+  });
   const maxVal = Math.max(...chartMonths.map(m => Math.max(m.totalRevenue, m.totalExpenses)), 1);
+
+  // Yearly totals
+  const yearRev  = chartMonths.reduce((s, m) => s + m.totalRevenue, 0);
+  const yearExp  = chartMonths.reduce((s, m) => s + m.totalExpenses, 0);
+  const yearNet  = yearRev - yearExp;
+  const ynColor  = yearNet >= 0 ? 'var(--green)' : 'var(--red)';
+  const ynBg     = yearNet >= 0 ? 'rgba(61,90,76,0.06)' : 'rgba(192,57,43,0.06)';
 
   let html = `
     <div class="mf-summary-cards">
       <div class="mf-summary-card" style="border-left:3px solid var(--green);">
-        <div class="mf-card-label">Total Revenue</div>
+        <div class="mf-card-label">Revenue — ${mfFormatMonth(mfMonth)}</div>
         <div class="mf-card-value" style="color:var(--green);">${mfFmt(totalRevenue)}</div>
       </div>
       <div class="mf-summary-card" style="border-left:3px solid var(--amber);">
-        <div class="mf-card-label">Total Expenses</div>
+        <div class="mf-card-label">Expenses — ${mfFormatMonth(mfMonth)}</div>
         <div class="mf-card-value" style="color:var(--amber);">${mfFmt(totalExpenses)}</div>
         <div style="font-size:11px;color:var(--ink-mute);margin-top:4px;">Fixed: ${mfFmt(totalFixed)} · Variable: ${mfFmt(totalVariable)}</div>
       </div>
       <div class="mf-summary-card" style="border-left:3px solid ${netColor};">
-        <div class="mf-card-label">Net Profit</div>
+        <div class="mf-card-label">Net Profit — ${mfFormatMonth(mfMonth)}</div>
         <div class="mf-card-value" style="color:${netColor};">${mfFmt(net)}</div>
       </div>
     </div>
-    <div class="mf-section-label">6-Month Overview</div>
-    <div class="mf-chart-wrap">
-      <div class="mf-chart">
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px;">
+      <div style="background:rgba(61,90,76,0.05);border-radius:10px;padding:14px 16px;text-align:center;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-mute);font-weight:600;margin-bottom:5px;">2026 Total Revenue</div>
+        <div style="font-size:20px;font-weight:700;color:var(--green);">${mfFmt(yearRev)}</div>
+      </div>
+      <div style="background:rgba(196,135,58,0.06);border-radius:10px;padding:14px 16px;text-align:center;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-mute);font-weight:600;margin-bottom:5px;">2026 Total Expenses</div>
+        <div style="font-size:20px;font-weight:700;color:var(--amber);">${mfFmt(yearExp)}</div>
+      </div>
+      <div style="background:${ynBg};border-radius:10px;padding:14px 16px;text-align:center;">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-mute);font-weight:600;margin-bottom:5px;">2026 Net Profit</div>
+        <div style="font-size:20px;font-weight:700;color:${ynColor};">${mfFmt(yearNet)}</div>
+      </div>
+    </div>
+
+    <div class="mf-section-label">2026 Annual Overview — click a month to open it</div>
+    <div class="mf-chart-wrap" style="overflow-x:auto;">
+      <div class="mf-chart" style="min-width:560px;gap:4px;">
         ${chartMonths.map(m => {
-          const rH = Math.round((m.totalRevenue / maxVal) * 100);
-          const eH = Math.round((m.totalExpenses / maxVal) * 100);
+          const rH  = Math.round((m.totalRevenue  / maxVal) * 100);
+          const eH  = Math.round((m.totalExpenses / maxVal) * 100);
+          const nH  = Math.round((Math.abs(m.net) / maxVal) * 100);
+          const nBg = m.net >= 0 ? 'rgba(61,90,76,0.55)' : 'rgba(192,57,43,0.6)';
           const isCurrent = m.key === mfMonth;
-          return `<div class="mf-chart-col">
+          return `<div class="mf-chart-col" onclick="mfMonth='${m.key}';renderMoneyFlow()" style="cursor:pointer;" title="${m.label}: Rev ${mfFmt(m.totalRevenue)} · Exp ${mfFmt(m.totalExpenses)} · Net ${mfFmt(m.net)}">
             <div class="mf-chart-bars">
-              <div class="mf-bar mf-bar-rev" style="height:${rH}%;" title="${mfFmt(m.totalRevenue)}"></div>
-              <div class="mf-bar mf-bar-exp" style="height:${eH}%;" title="${mfFmt(m.totalExpenses)}"></div>
+              <div class="mf-bar mf-bar-rev" style="height:${rH}%;"></div>
+              <div class="mf-bar mf-bar-exp" style="height:${eH}%;"></div>
+              <div class="mf-bar" style="height:${nH}%;background:${nBg};border-radius:3px 3px 0 0;flex:1;min-height:${m.net!==0?2:0}px;"></div>
             </div>
             <div class="mf-chart-label${isCurrent?' mf-chart-label-active':''}">${m.label}</div>
           </div>`;
         }).join('')}
       </div>
     </div>
-    <div style="display:flex;gap:16px;margin-top:8px;margin-bottom:24px;">
+    <div style="display:flex;gap:16px;margin-top:8px;margin-bottom:28px;flex-wrap:wrap;">
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-mute);">
         <span style="width:10px;height:10px;background:var(--green);opacity:0.85;border-radius:2px;display:inline-block;"></span>Revenue
       </div>
       <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-mute);">
         <span style="width:10px;height:10px;background:var(--amber);opacity:0.85;border-radius:2px;display:inline-block;"></span>Expenses
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink-mute);">
+        <span style="width:10px;height:10px;background:rgba(61,90,76,0.55);border-radius:2px;display:inline-block;"></span>Net profit
+        <span style="width:10px;height:10px;background:rgba(192,57,43,0.6);border-radius:2px;display:inline-block;margin-left:4px;"></span>Net loss
       </div>
     </div>
   `;
