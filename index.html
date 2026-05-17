@@ -2765,17 +2765,148 @@ function mfDeleteVariable(id) {
 
 // ── Duplicate & Export ────────────────────
 function mfDuplicateMonth() {
-  const [y, m] = mfMonth.split('-').map(Number);
-  const next = new Date(y, m, 1);
-  const nextKey = `${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}`;
   const current = mfGetMonth(mfMonth);
-  const target = mfGetMonth(nextKey);
-  target.fixedExpenses = current.fixedExpenses.map(e => ({...e, id: crypto.randomUUID()}));
-  mfSaveMonth(nextKey);
-  if (confirm(`Fixed expenses copied to ${mfFormatMonth(nextKey)}.\n\nGo to that month now?`)) {
-    mfMonth = nextKey;
-    renderMoneyFlow();
+  const revenue = current.revenue || [];
+  const fixed = current.fixedExpenses || [];
+  const variable = current.variableExpenses || [];
+
+  if (!revenue.length && !fixed.length && !variable.length) {
+    alert('No items in this month to duplicate.'); return;
   }
+
+  const months2026 = ['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06',
+                      '2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'];
+  const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const mkItem = (item, type, label) =>
+    `<label style="display:flex;align-items:center;gap:8px;padding:5px 2px;cursor:pointer;border-radius:6px;">
+      <input type="checkbox" class="mf-dup-item" data-type="${type}" data-id="${item.id}" checked style="accent-color:var(--green);width:14px;height:14px;flex-shrink:0;">
+      <span style="font-size:12px;color:var(--ink);">${label}</span>
+    </label>`;
+
+  let sections = '';
+  if (revenue.length) {
+    sections += `<div style="padding:10px 14px;${fixed.length||variable.length?'border-bottom:1px solid var(--cream-dark);':''}">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:4px;">Revenue (${revenue.length})</div>
+      ${revenue.map(r => mkItem(r, 'revenue', `${escHtml(r.description||'—')}${r.date?' · '+r.date:''} · <strong style="color:var(--green);">${mfFmt(r.amount)}</strong>`)).join('')}
+    </div>`;
+  }
+  if (fixed.length) {
+    sections += `<div style="padding:10px 14px;${variable.length?'border-bottom:1px solid var(--cream-dark);':''}">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--amber);margin-bottom:4px;">Fixed Expenses (${fixed.length})</div>
+      ${fixed.map(e => mkItem(e, 'fixed', `${escHtml(e.description||'—')} · <strong style="color:var(--amber);">${mfFmt(e.amount)}</strong>`)).join('')}
+    </div>`;
+  }
+  if (variable.length) {
+    sections += `<div style="padding:10px 14px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--amber);margin-bottom:4px;">Variable Expenses (${variable.length})</div>
+      ${variable.map(e => mkItem(e, 'variable', `${escHtml(e.description||'—')}${e.date?' · '+e.date:''} · <strong style="color:var(--amber);">${mfFmt(e.amount)}</strong>`)).join('')}
+    </div>`;
+  }
+
+  const monthsHtml = months2026.map((m, i) => {
+    const isCurrent = m === mfMonth;
+    return `<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid var(--cream-dark);border-radius:6px;cursor:${isCurrent?'default':'pointer'};background:${isCurrent?'var(--cream)':'var(--white)'};opacity:${isCurrent?'0.45':'1'};">
+      <input type="checkbox" class="mf-dup-month" value="${m}" ${isCurrent?'disabled':''} style="accent-color:var(--green);">
+      <span style="font-size:12px;font-weight:500;">${mNames[i]}</span>
+    </label>`;
+  }).join('');
+
+  const modal = document.getElementById('calModal');
+  modal.innerHTML = `<div class="cal-modal" style="max-width:580px;">
+    <h3 class="cal-modal-title">Duplicate Items</h3>
+    <p style="font-size:13px;color:var(--ink-mute);margin:-8px 0 18px;">Copying from <strong>${mfFormatMonth(mfMonth)}</strong> — choose what to copy and which months to copy it to.</p>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-mute);">Select items</div>
+      <div style="display:flex;gap:12px;">
+        <a href="#" onclick="event.preventDefault();document.querySelectorAll('.mf-dup-item').forEach(c=>c.checked=true)" style="font-size:12px;color:var(--green);text-decoration:none;">Select all</a>
+        <a href="#" onclick="event.preventDefault();document.querySelectorAll('.mf-dup-item').forEach(c=>c.checked=false)" style="font-size:12px;color:var(--ink-mute);text-decoration:none;">None</a>
+      </div>
+    </div>
+    <div style="border:1px solid var(--cream-dark);border-radius:10px;overflow:hidden;margin-bottom:20px;">${sections}</div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--ink-mute);">Copy to months</div>
+      <div style="display:flex;gap:12px;">
+        <a href="#" onclick="event.preventDefault();document.querySelectorAll('.mf-dup-month:not([disabled])').forEach(c=>c.checked=true)" style="font-size:12px;color:var(--green);text-decoration:none;">Select all</a>
+        <a href="#" onclick="event.preventDefault();document.querySelectorAll('.mf-dup-month').forEach(c=>c.checked=false)" style="font-size:12px;color:var(--ink-mute);text-decoration:none;">None</a>
+      </div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px;">${monthsHtml}</div>
+
+    <div id="mf-dup-msg" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;"></div>
+
+    <div class="cal-modal-actions">
+      <button class="btn-outline" onclick="document.getElementById('calModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" style="width:auto;" onclick="mfDuplicateExecute()">Duplicate Selected</button>
+    </div>
+  </div>`;
+  modal.classList.add('open');
+}
+
+async function mfDuplicateExecute() {
+  const current = mfGetMonth(mfMonth);
+
+  const selectedItems = [...document.querySelectorAll('.mf-dup-item:checked')].map(c => ({type: c.dataset.type, id: c.dataset.id}));
+  if (!selectedItems.length) { mfDupMsg('No items selected.', 'warn'); return; }
+
+  const selectedMonths = [...document.querySelectorAll('.mf-dup-month:checked')].map(c => c.value);
+  if (!selectedMonths.length) { mfDupMsg('No months selected.', 'warn'); return; }
+
+  const revItems  = selectedItems.filter(x => x.type === 'revenue').map(x => current.revenue.find(r => r.id === x.id)).filter(Boolean);
+  const fixItems  = selectedItems.filter(x => x.type === 'fixed').map(x => current.fixedExpenses.find(e => e.id === x.id)).filter(Boolean);
+  const varItems  = selectedItems.filter(x => x.type === 'variable').map(x => current.variableExpenses.find(e => e.id === x.id)).filter(Boolean);
+
+  // Detect conflicts (same description already exists in target month)
+  const conflicts = [];
+  selectedMonths.forEach(m => {
+    const td = mfGetMonth(m);
+    revItems.forEach(r => { if ((td.revenue||[]).some(x => x.description === r.description)) conflicts.push({month: m, desc: r.description||'(no description)'}); });
+    fixItems.forEach(e => { if ((td.fixedExpenses||[]).some(x => x.description === e.description)) conflicts.push({month: m, desc: e.description||'(no description)'}); });
+    varItems.forEach(e => { if ((td.variableExpenses||[]).some(x => x.description === e.description)) conflicts.push({month: m, desc: e.description||'(no description)'}); });
+  });
+
+  let skipDuplicates = false;
+  if (conflicts.length > 0) {
+    const list = conflicts.slice(0, 4).map(c => `• "${c.desc}" in ${mfFormatMonth(c.month)}`).join('\n');
+    const more = conflicts.length > 4 ? `\n… and ${conflicts.length - 4} more` : '';
+    const addAnyway = confirm(`${conflicts.length} item${conflicts.length > 1 ? 's' : ''} already exist in the target month${selectedMonths.length > 1 ? 's' : ''}:\n\n${list}${more}\n\nClick OK to add them anyway (create duplicates).\nClick Cancel to skip those items.`);
+    skipDuplicates = !addAnyway;
+  }
+
+  const saves = [];
+  selectedMonths.forEach(m => {
+    const td = mfGetMonth(m);
+    revItems.forEach(r => {
+      if (skipDuplicates && (td.revenue||[]).some(x => x.description === r.description)) return;
+      td.revenue = [...(td.revenue||[]), {...r, id: crypto.randomUUID()}];
+    });
+    fixItems.forEach(e => {
+      if (skipDuplicates && (td.fixedExpenses||[]).some(x => x.description === e.description)) return;
+      td.fixedExpenses = [...(td.fixedExpenses||[]), {...e, id: crypto.randomUUID()}];
+    });
+    varItems.forEach(e => {
+      if (skipDuplicates && (td.variableExpenses||[]).some(x => x.description === e.description)) return;
+      td.variableExpenses = [...(td.variableExpenses||[]), {...e, id: crypto.randomUUID()}];
+    });
+    saves.push(mfSaveMonth(m));
+  });
+
+  await Promise.all(saves);
+  document.getElementById('calModal').classList.remove('open');
+  const total = revItems.length + fixItems.length + varItems.length;
+  const monthList = selectedMonths.map(m => mfFormatMonth(m)).join(', ');
+  alert(`Done! ${total} item${total > 1 ? 's' : ''} copied to: ${monthList}`);
+}
+
+function mfDupMsg(text, type) {
+  const el = document.getElementById('mf-dup-msg');
+  if (!el) return;
+  el.textContent = text;
+  el.style.display = 'block';
+  el.style.background = type === 'warn' ? 'rgba(196,135,58,0.1)' : 'rgba(61,90,76,0.08)';
+  el.style.color = type === 'warn' ? 'var(--amber)' : 'var(--green)';
 }
 
 function mfExport() {
