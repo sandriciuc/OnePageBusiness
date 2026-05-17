@@ -2502,14 +2502,16 @@ function mfRenderExpenses(monthData) {
     html += '<div class="mf-empty" style="margin-bottom:24px;">No fixed expenses yet.</div>';
   } else {
     html += '<div class="field-card" style="padding:0;overflow:hidden;margin-bottom:24px;">';
-    html += '<table class="mf-table"><thead><tr><th>Description</th><th>Category</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
+    html += '<table class="mf-table"><thead><tr><th>Description</th><th>Provider</th><th>Category</th><th style="text-align:center;width:44px;">RO/BE</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
     fixed.forEach(e => {
       const qty = e.qty ?? 1;
       const unitPrice = e.unitPrice ?? (e.amount ?? 0);
       const total = qty * unitPrice;
       html += `<tr>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.description||'')}" placeholder="e.g. Software subscription" onblur="mfUpdateFixed('${e.id}','description',this.value)"></td>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(e.provider||'')}" placeholder="Provider" onblur="mfUpdateFixed('${e.id}','provider',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateFixed('${e.id}','category',this.value)"></td>
+        <td style="text-align:center;"><select class="mf-client-select" style="max-width:54px;text-align:center;" onchange="mfUpdateFixed('${e.id}','origin',this.value)"><option value="">—</option><option value="RO"${e.origin==='RO'?' selected':''}>RO</option><option value="BE"${e.origin==='BE'?' selected':''}>BE</option></select></td>
         <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateFixed('${e.id}','qty',this.value)"></td>
         <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateFixed('${e.id}','unitPrice',this.value)"></td>
         <td id="mf-ftotal-${e.id}" style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
@@ -2517,7 +2519,7 @@ function mfRenderExpenses(monthData) {
       </tr>`;
     });
     html += `</tbody><tfoot><tr style="background:rgba(61,90,76,0.05);border-top:2px solid var(--cream-dark);">
-      <td colspan="4" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
+      <td colspan="6" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
       <td id="mf-fixed-mtotal" style="text-align:right;padding:9px 14px;font-weight:700;color:var(--amber);">${mfFmt(totalFixed)}</td>
       <td></td>
     </tr></tfoot></table></div>`;
@@ -2537,7 +2539,7 @@ function mfRenderExpenses(monthData) {
     html += '<div class="mf-empty">No variable expenses yet.</div>';
   } else {
     html += '<div class="field-card" style="padding:0;overflow:hidden;">';
-    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
+    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Description</th><th>Provider</th><th>Category</th><th style="text-align:center;width:44px;">RO/BE</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
     variable.forEach(e => {
       const qty = e.qty ?? 1;
       const unitPrice = e.unitPrice ?? (e.amount ?? 0);
@@ -2545,7 +2547,9 @@ function mfRenderExpenses(monthData) {
       html += `<tr>
         <td><input type="date" class="mf-inline-input" value="${e.date||''}" onchange="mfUpdateVariable('${e.id}','date',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.description||'')}" placeholder="Description" onblur="mfUpdateVariable('${e.id}','description',this.value)"></td>
+        <td><input type="text" class="mf-inline-input" value="${escHtml(e.provider||'')}" placeholder="Provider" onblur="mfUpdateVariable('${e.id}','provider',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(e.category||'')}" placeholder="Category" onblur="mfUpdateVariable('${e.id}','category',this.value)"></td>
+        <td style="text-align:center;"><select class="mf-client-select" style="max-width:54px;text-align:center;" onchange="mfUpdateVariable('${e.id}','origin',this.value)"><option value="">—</option><option value="RO"${e.origin==='RO'?' selected':''}>RO</option><option value="BE"${e.origin==='BE'?' selected':''}>BE</option></select></td>
         <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateVariable('${e.id}','qty',this.value)"></td>
         <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateVariable('${e.id}','unitPrice',this.value)"></td>
         <td id="mf-vtotal-${e.id}" style="text-align:right;font-weight:600;color:var(--amber);white-space:nowrap;">${mfFmt(total)}</td>
@@ -2553,7 +2557,7 @@ function mfRenderExpenses(monthData) {
       </tr>`;
     });
     html += `</tbody><tfoot><tr style="background:rgba(61,90,76,0.05);border-top:2px solid var(--cream-dark);">
-      <td colspan="5" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
+      <td colspan="7" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
       <td id="mf-var-mtotal" style="text-align:right;padding:9px 14px;font-weight:700;color:var(--amber);">${mfFmt(totalVar)}</td>
       <td></td>
     </tr></tfoot></table></div>`;
