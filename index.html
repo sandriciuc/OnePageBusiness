@@ -219,6 +219,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 .idea-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .idea-move-select{border:1px solid var(--cream-dark);border-radius:6px;padding:5px 8px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--green);background:var(--cream);cursor:pointer;max-width:190px;}
 .idea-move-select:focus{outline:none;border-color:var(--green);}
+.idea-actions .task-del{color:#bbb;font-size:18px;}
+.idea-actions .task-del:hover{color:var(--red);}
 .mgmt-tab-move{background:transparent;border:none;color:#ccc;cursor:pointer;font-size:9px;padding:0 6px;line-height:1;transition:color 0.15s;align-self:stretch;display:flex;align-items:center;}
 .mgmt-tab-move:hover{color:var(--green);background:rgba(61,90,76,0.05);}
 .mgmt-new-tab{flex-shrink:0;padding:10px 16px;border:none;border-left:1px solid var(--cream-dark);background:transparent;color:var(--green);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;letter-spacing:0.03em;text-transform:uppercase;transition:background 0.2s;}
@@ -1702,7 +1704,7 @@ function drawIdeasContent() {
               <option value="">→ Move to project</option>
               ${projectOpts}
             </select>` : `<span style="font-size:12px;color:var(--ink-mute);">No projects yet</span>`}
-          <button class="btn-danger-sm" onclick="deleteIdea('${idea.id}')" style="font-size:12px;padding:5px 10px;">Delete</button>
+          <button class="task-del" onclick="deleteIdea('${idea.id}')" title="Delete idea">×</button>
         </div>
       </div>`;
     });
