@@ -2455,7 +2455,7 @@ function mfRenderRevenue(monthData) {
     html += '<div class="mf-empty">No revenue entries yet. Add your first one above.</div>';
   } else {
     html += '<div class="field-card" style="padding:0;overflow:hidden;">';
-    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Category</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
+    html += '<table class="mf-table"><thead><tr><th>Date</th><th>Client</th><th>Description</th><th>Category</th><th style="text-align:center;width:44px;">RO/BE</th><th style="text-align:center;width:52px;">Qty</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Total</th><th></th></tr></thead><tbody>';
     revenue.forEach(r => {
       const qty = r.qty ?? 1;
       const unitPrice = r.unitPrice ?? (r.amount ?? 0);
@@ -2466,6 +2466,7 @@ function mfRenderRevenue(monthData) {
         <td><select class="mf-client-select" onchange="mfUpdateRevenue('${r.id}','client_id',this.value)"><option value="">— none —</option>${clientOpts}</select></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(r.description||'')}" placeholder="Description" onblur="mfUpdateRevenue('${r.id}','description',this.value)"></td>
         <td><input type="text" class="mf-inline-input" value="${escHtml(r.category||'')}" placeholder="Category" onblur="mfUpdateRevenue('${r.id}','category',this.value)"></td>
+        <td style="text-align:center;"><select class="mf-client-select" style="max-width:54px;text-align:center;" onchange="mfUpdateRevenue('${r.id}','origin',this.value)"><option value="">—</option><option value="RO"${r.origin==='RO'?' selected':''}>RO</option><option value="BE"${r.origin==='BE'?' selected':''}>BE</option></select></td>
         <td style="text-align:center;"><input type="number" class="mf-inline-input" style="width:46px;text-align:center;" value="${qty}" min="1" step="1" onchange="mfUpdateRevenue('${r.id}','qty',this.value)"></td>
         <td><input type="number" class="mf-inline-input mf-amount-input" value="${unitPrice||''}" placeholder="0" min="0" step="0.01" onblur="mfUpdateRevenue('${r.id}','unitPrice',this.value)"></td>
         <td id="mf-rtotal-${r.id}" style="text-align:right;font-weight:600;color:var(--green);white-space:nowrap;">${mfFmt(total)}</td>
@@ -2473,7 +2474,7 @@ function mfRenderRevenue(monthData) {
       </tr>`;
     });
     html += `</tbody><tfoot><tr style="background:rgba(61,90,76,0.05);border-top:2px solid var(--cream-dark);">
-      <td colspan="6" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
+      <td colspan="7" style="text-align:right;padding:9px 14px;font-size:12px;font-weight:600;color:var(--ink-mute);">Monthly Total</td>
       <td id="mf-rev-mtotal" style="text-align:right;padding:9px 14px;font-weight:700;color:var(--green);">${mfFmt(total)}</td>
       <td></td>
     </tr></tfoot></table></div>`;
