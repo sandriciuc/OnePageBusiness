@@ -1702,7 +1702,7 @@ function drawIdeasContent() {
               <option value="">→ Move to project</option>
               ${projectOpts}
             </select>` : `<span style="font-size:12px;color:var(--ink-mute);">No projects yet</span>`}
-          <button class="task-del" onclick="deleteIdea('${idea.id}')">×</button>
+          <button class="btn-danger-sm" onclick="deleteIdea('${idea.id}')" style="font-size:12px;padding:5px 10px;">Delete</button>
         </div>
       </div>`;
     });
