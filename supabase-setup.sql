@@ -51,7 +51,28 @@ CREATE TABLE IF NOT EXISTS strategies (
 ALTER TABLE strategies ADD COLUMN IF NOT EXISTS offers_data JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE strategies ADD COLUMN IF NOT EXISTS funnel_data JSONB DEFAULT '[]'::jsonb;
 ALTER TABLE strategies ADD COLUMN IF NOT EXISTS dashboard_products JSONB DEFAULT '[]'::jsonb;
-ALTER TABLE strategies ADD COLUMN IF NOT EXISTS ideas JSONB DEFAULT '[]'::jsonb;
+
+-- 12. Ideas table (per-user idea capture, cross-device)
+CREATE TABLE IF NOT EXISTS ideas (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
+  text TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE ideas ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage own ideas" ON ideas;
+CREATE POLICY "Users can manage own ideas"
+  ON ideas FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+DROP TRIGGER IF EXISTS ideas_updated_at ON ideas;
+CREATE TRIGGER ideas_updated_at
+  BEFORE UPDATE ON ideas
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- 3. Enable Row Level Security
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;

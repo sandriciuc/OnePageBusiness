@@ -671,6 +671,7 @@ async function handleLogout() {
   await supabase.auth.signOut();
   currentUser = null; currentProfile = null; strategyData = null;
   mfData = null; mfLoaded = false; mfMonth = null;
+  ideasData = [];
   showAuth('login');
 }
 
@@ -708,9 +709,8 @@ async function initApp(user) {
       strategyData.offers_data = strat.offers_data ? (typeof strat.offers_data === 'string' ? JSON.parse(strat.offers_data) : strat.offers_data) : [];
       strategyData.funnel_data = strat.funnel_data ? (typeof strat.funnel_data === 'string' ? JSON.parse(strat.funnel_data) : strat.funnel_data) : [];
       strategyData.dashboard_products = strat.dashboard_products ? (typeof strat.dashboard_products === 'string' ? JSON.parse(strat.dashboard_products) : strat.dashboard_products) : [];
-      strategyData.ideas = strat.ideas ? (typeof strat.ideas === 'string' ? JSON.parse(strat.ideas) : strat.ideas) : [];
     } else {
-      strategyData = { kpis: {...defaultKpis}, offers_data: [], dashboard_products: [], ideas: [] };
+      strategyData = { kpis: {...defaultKpis}, offers_data: [], dashboard_products: [] };
       allTextFields.forEach(f => { if (f.col) strategyData[f.col] = ''; });
     }
 
@@ -832,7 +832,6 @@ function triggerSave() {
       `${i+1}. ${b.label||'Step'}${b.offer?' → '+b.offer:''}${b.channel?' ['+b.channel+']':''}${b.action?'\n   '+b.action:''}`
     ).join('\n');
     updateObj.dashboard_products = strategyData.dashboard_products || [];
-    updateObj.ideas = strategyData.ideas || [];
 
     await supabase.from('strategies').update(updateObj).eq('id', strategyId);
     
@@ -1545,7 +1544,6 @@ async function viewClient(userId) {
   strategyData.kpis = { ...defaultKpis, ...strat.kpis };
   strategyData.offers_data = strat.offers_data ? (typeof strat.offers_data === 'string' ? JSON.parse(strat.offers_data) : strat.offers_data) : [];
   strategyData.dashboard_products = strat.dashboard_products ? (typeof strat.dashboard_products === 'string' ? JSON.parse(strat.dashboard_products) : strat.dashboard_products) : [];
-  strategyData.ideas = strat.ideas ? (typeof strat.ideas === 'string' ? JSON.parse(strat.ideas) : strat.ideas) : [];
   isViewingClient = true;
   viewingClientName = profile?.full_name || profile?.email || 'Client';
 
@@ -1557,6 +1555,7 @@ async function viewClient(userId) {
 // MANAGEMENT
 // ═══════════════════════════════════════
 let projectsData = [];
+let ideasData = [];
 let activeMgmtTab = 'overview';
 
 function escHtml(s) {
@@ -1566,8 +1565,12 @@ function escHtml(s) {
 async function renderManagement() {
   const c = document.getElementById('view-management');
   c.innerHTML = '<div class="loading-screen" style="min-height:200px;"><div class="loading-spinner"></div></div>';
-  const { data } = await supabase.from('projects').select('*').eq('user_id', currentUser.id).order('position',{ascending:true}).order('created_at',{ascending:true});
-  projectsData = (data||[]).map((p,i) => ({...p, position: p.position??i}));
+  const [{ data: projects }, { data: ideas }] = await Promise.all([
+    supabase.from('projects').select('*').eq('user_id', currentUser.id).order('position',{ascending:true}).order('created_at',{ascending:true}),
+    supabase.from('ideas').select('*').eq('user_id', currentUser.id).order('created_at',{ascending:false})
+  ]);
+  projectsData = (projects||[]).map((p,i) => ({...p, position: p.position??i}));
+  ideasData = ideas || [];
   drawManagement();
 }
 
@@ -1676,7 +1679,6 @@ function drawProjectContent(p) {
 }
 
 function drawIdeasContent() {
-  const ideas = strategyData?.ideas || [];
   let html = `<div style="margin-bottom:20px;">
     <div class="section-layer">Ideas</div>
     <h3 style="font-family:'Playfair Display',serif;font-size:20px;font-weight:400;color:var(--ink);margin-bottom:4px;">Idea Capture</h3>
@@ -1685,12 +1687,12 @@ function drawIdeasContent() {
   <div style="margin-bottom:16px;">
     <button class="btn-outline" onclick="addIdea()" style="font-size:13px;">+ Add Idea</button>
   </div>`;
-  if (!ideas.length) {
+  if (!ideasData.length) {
     html += `<div style="text-align:center;padding:40px;color:var(--ink-mute);font-size:13px;">No ideas yet. Add your first one above.</div>`;
   } else {
     const projectOpts = projectsData.map(p=>`<option value="${p.id}">${escHtml(p.name||'Untitled')}</option>`).join('');
     html += '<div style="display:flex;flex-direction:column;gap:10px;">';
-    ideas.forEach(idea => {
+    ideasData.forEach(idea => {
       html += `<div class="idea-item">
         <textarea class="idea-input" rows="2" placeholder="Write your idea..."
           onblur="updateIdea('${idea.id}',this.value)">${escHtml(idea.text||'')}</textarea>
@@ -1709,35 +1711,36 @@ function drawIdeasContent() {
   return html;
 }
 
-function addIdea() {
-  if (!strategyData.ideas) strategyData.ideas = [];
-  strategyData.ideas.unshift({ id: crypto.randomUUID(), text: '', created_at: new Date().toISOString() });
-  triggerSave();
-  drawManagement();
+async function addIdea() {
+  const { data, error } = await supabase.from('ideas').insert({ user_id: currentUser.id, text: '' }).select().single();
+  if (data) { ideasData.unshift(data); drawManagement(); }
 }
 
-function updateIdea(id, text) {
-  const idea = (strategyData.ideas || []).find(i => i.id === id);
-  if (idea) { idea.text = text; triggerSave(); }
+async function updateIdea(id, text) {
+  const idea = ideasData.find(i => i.id === id);
+  if (idea) {
+    idea.text = text;
+    await supabase.from('ideas').update({ text }).eq('id', id);
+  }
 }
 
-function deleteIdea(id) {
-  strategyData.ideas = (strategyData.ideas || []).filter(i => i.id !== id);
-  triggerSave();
+async function deleteIdea(id) {
+  ideasData = ideasData.filter(i => i.id !== id);
+  await supabase.from('ideas').delete().eq('id', id);
   drawManagement();
 }
 
 async function moveIdeaToProject(ideaId, projectId) {
   if (!projectId) return;
-  const idea = (strategyData.ideas || []).find(i => i.id === ideaId);
+  const idea = ideasData.find(i => i.id === ideaId);
   if (!idea) return;
   const idx = projectsData.findIndex(p => p.id === projectId);
   if (idx === -1) return;
+  await supabase.from('ideas').delete().eq('id', ideaId);
+  ideasData = ideasData.filter(i => i.id !== ideaId);
   const task = { id: crypto.randomUUID(), title: idea.text || 'Idea', completed: false, due_date: '' };
   projectsData[idx].tasks = [...(projectsData[idx].tasks || []), task];
   await supabase.from('projects').update({ tasks: projectsData[idx].tasks }).eq('id', projectId);
-  strategyData.ideas = (strategyData.ideas || []).filter(i => i.id !== ideaId);
-  triggerSave();
   activeMgmtTab = projectId;
   drawManagement();
 }
@@ -1754,9 +1757,8 @@ async function moveTaskTo(fromProjectId, taskId, targetId) {
   await supabase.from('projects').update({ tasks: projectsData[fromIdx].tasks }).eq('id', fromProjectId);
 
   if (targetId === 'ideas') {
-    if (!strategyData.ideas) strategyData.ideas = [];
-    strategyData.ideas.unshift({ id: crypto.randomUUID(), text: task.title || '', created_at: new Date().toISOString() });
-    triggerSave();
+    const { data: newIdea } = await supabase.from('ideas').insert({ user_id: currentUser.id, text: task.title || '' }).select().single();
+    if (newIdea) ideasData.unshift(newIdea);
     activeMgmtTab = 'ideas';
   } else {
     const toIdx = projectsData.findIndex(p => p.id === targetId);
