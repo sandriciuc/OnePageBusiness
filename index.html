@@ -396,6 +396,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);f
 @media(max-width:600px){.funnel-block-body{grid-template-columns:1fr;}}
 
 /* ═══ CLIENTS ═══ */
+/* ═══ KPI TABLE ═══ */
+.kpi-table{width:100%;border-collapse:collapse;font-size:12px;}
+.kpi-table th{padding:9px 10px;text-align:center;font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-mute);background:var(--cream);border-bottom:1px solid var(--cream-dark);white-space:nowrap;}
+.kpi-table th:first-child{text-align:left;}
+.kpi-table td{padding:6px 8px;border-bottom:1px solid rgba(0,0,0,0.04);vertical-align:middle;}
+.kpi-table tbody tr:hover td{background:rgba(61,90,76,0.015);}
+.kpi-group-border > td{border-top:2px solid var(--cream-dark) !important;}
+.kpi-group-label{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.kpi-month-input{border:none;border-bottom:1px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;text-align:center;color:inherit;outline:none;padding:2px 0;transition:border-color 0.2s;width:52px;}
+.kpi-month-input:focus{border-bottom-color:var(--green);}
+.kpi-set-all{border:none;border-bottom:1px dashed var(--cream-dark);background:transparent;font-family:'DM Sans',sans-serif;font-size:11px;color:var(--ink-mute);outline:none;padding:2px 0;width:64px;text-align:center;transition:border-color 0.2s;}
+.kpi-set-all:focus{border-bottom-color:var(--amber);}
+.kpi-row-type{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-mute);white-space:nowrap;}
+
+/* ═══ CLIENTS ═══ */
 .clients-tabbar{display:flex;gap:0;border-bottom:2px solid var(--cream-dark);margin-bottom:20px;}
 .clients-tab{padding:11px 20px;border:none;border-bottom:3px solid transparent;background:transparent;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:#999;cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;transition:all 0.2s;margin-bottom:-2px;}
 .clients-tab:hover{color:var(--ink-soft);}
@@ -939,6 +954,39 @@ document.addEventListener('click', e => {
   }
 });
 
+function updateKpiMonthly(kpiKey, month, field, value) {
+  if (!strategyData.kpis) strategyData.kpis = {...defaultKpis};
+  if (!strategyData.kpis[kpiKey]) strategyData.kpis[kpiKey] = {current:'', target:'', status:'on-track', monthly:{}};
+  if (!strategyData.kpis[kpiKey].monthly) strategyData.kpis[kpiKey].monthly = {};
+  if (!strategyData.kpis[kpiKey].monthly[month]) strategyData.kpis[kpiKey].monthly[month] = {goal:'', actual:''};
+  strategyData.kpis[kpiKey].monthly[month][field] = value;
+  triggerSave();
+}
+
+function kpiSetAllGoals(kpiKey, value) {
+  if (!value && value !== 0) return;
+  const months = get2026Months();
+  if (!strategyData.kpis) strategyData.kpis = {...defaultKpis};
+  if (!strategyData.kpis[kpiKey]) strategyData.kpis[kpiKey] = {current:'', target:'', status:'on-track', monthly:{}};
+  if (!strategyData.kpis[kpiKey].monthly) strategyData.kpis[kpiKey].monthly = {};
+  months.forEach(m => {
+    if (!strategyData.kpis[kpiKey].monthly[m]) strategyData.kpis[kpiKey].monthly[m] = {goal:'', actual:''};
+    strategyData.kpis[kpiKey].monthly[m].goal = value;
+  });
+  strategyData.kpis[kpiKey].target = value;
+  triggerSave();
+  renderKPIs();
+}
+
+function cycleKpiStatus(kpiKey) {
+  const states = ['on-track', 'at-risk', 'off-track'];
+  if (!strategyData.kpis?.[kpiKey]) return;
+  const cur = strategyData.kpis[kpiKey].status || 'on-track';
+  strategyData.kpis[kpiKey].status = states[(states.indexOf(cur) + 1) % states.length];
+  triggerSave();
+  renderKPIs();
+}
+
 // ═══════════════════════════════════════
 // OFFERS
 // ═══════════════════════════════════════
@@ -1176,9 +1224,15 @@ function renderKPIs() {
   const ft = strategyData?.financial_target || '';
   const ftFilled = !!ft.trim();
   const kpis = strategyData?.kpis || defaultKpis;
-  
-  let html = `<div class="section-header"><div class="section-layer">Layer 03</div><h2 class="section-title">KPI Dashboard</h2><p class="section-sub">Your tracking layer — the numbers that tell you if your strategy is working.</p></div>`;
-  
+  const months = get2026Months();
+  const mLabels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  let html = `<div class="section-header">
+    <div class="section-layer">Layer 03</div>
+    <h2 class="section-title">KPI Dashboard</h2>
+    <p class="section-sub">Track all 6 key metrics month by month across 2026.</p>
+  </div>`;
+
   html += `<div class="field-card${ftFilled?' filled':''}${ftFilled?' expanded':''}" style="margin-bottom:24px;">
     <button class="field-header" onclick="toggleField(this)">
       <span class="field-icon">${icons.dollar}</span>
@@ -1190,31 +1244,83 @@ function renderKPIs() {
       <textarea class="text-area" rows="2" placeholder="Your revenue / profit target (e.g. €15,000/month by December)" oninput="updateField('financial_target',this.value,this)">${ft}</textarea>
     </div>
   </div>`;
-  
-  html += '<div class="kpi-grid">';
-  kpiDefs.forEach(kpi => {
-    const d = kpis[kpi.key] || {current:'',target:'',status:'on-track'};
-    const pct = d.target && d.current ? Math.min(100,Math.round((parseFloat(d.current)/parseFloat(d.target))*100)) : 0;
-    const s = statusMap[d.status];
-    html += `<div class="kpi-card" data-kpi-key="${kpi.key}">
-      <div class="kpi-header">
-        <span class="kpi-label">${kpi.label}</span>
-        <div style="position:relative;">
-          <button class="status-badge" style="background:${s.bg};" onclick="toggleStatus(this,'${kpi.key}')">${s.label} ${icons.chevDown}</button>
-          <div class="status-dropdown" id="dd-${kpi.key}">
-            ${Object.entries(statusMap).map(([k,v])=>`<button class="status-option" onclick="setStatus('${kpi.key}','${k}')"><span class="status-dot" style="background:${v.bg};"></span>${v.label}</button>`).join('')}
-          </div>
-        </div>
-      </div>
-      <div class="kpi-inputs">
-        <div class="kpi-input-group"><label class="kpi-input-label">Current</label><input class="kpi-input" value="${d.current}" placeholder="0" oninput="updateKPI('${kpi.key}','current',this.value)"></div>
-        <div class="kpi-divider">/</div>
-        <div class="kpi-input-group"><label class="kpi-input-label">Target</label><input class="kpi-input" value="${d.target}" placeholder="0" oninput="updateKPI('${kpi.key}','target',this.value)"></div>
-      </div>
-      <div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${s.bg};"></div></div><div class="progress-pct">${pct}%</div></div>
-    </div>`;
+
+  html += `<div style="background:var(--white);border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">
+    <div style="overflow-x:auto;">
+    <table class="kpi-table">
+      <thead><tr>
+        <th style="text-align:left;min-width:150px;padding-left:14px;">KPI</th>
+        <th style="min-width:90px;" title="Type a number and press Enter/Tab to set same goal for all 12 months">Quick-set goal</th>
+        ${mLabels.map(l => `<th style="width:58px;">${l}</th>`).join('')}
+        <th style="width:72px;">Total / Avg</th>
+      </tr></thead>
+      <tbody>`;
+
+  kpiDefs.forEach((kpi, idx) => {
+    const kd = kpis[kpi.key] || {current:'', target:'', status:'on-track', monthly:{}};
+    const monthly = kd.monthly || {};
+    const s = statusMap[kd.status || 'on-track'];
+    const isPercent = kpi.key === 'conversionRate';
+
+    let goalTotal = 0, actualTotal = 0, filledMonths = 0;
+    const goalCells = months.map(m => {
+      const val = monthly[m]?.goal ?? '';
+      goalTotal += parseFloat(val) || 0;
+      return `<td style="text-align:center;padding:5px 4px;"><input class="kpi-month-input" type="number" min="0" value="${val}" placeholder="—" onblur="updateKpiMonthly('${kpi.key}','${m}','goal',this.value)"></td>`;
+    });
+
+    const actualCells = months.map(m => {
+      const val = monthly[m]?.actual ?? '';
+      const goal = parseFloat(monthly[m]?.goal) || 0;
+      const actual = parseFloat(val) || 0;
+      if (val !== '') filledMonths++;
+      actualTotal += actual;
+      let style = 'text-align:center;padding:5px 4px;';
+      let inputStyle = '';
+      if (val !== '' && goal) {
+        const c = actual >= goal ? 'var(--green)' : actual >= goal * 0.8 ? 'var(--amber)' : 'var(--red)';
+        style += `background:${actual >= goal ? 'rgba(61,90,76,0.06)' : actual >= goal * 0.8 ? 'rgba(196,135,58,0.07)' : 'rgba(192,57,43,0.06)'};`;
+        inputStyle = `color:${c};font-weight:600;`;
+      }
+      return `<td style="${style}"><input class="kpi-month-input" type="number" min="0" value="${val}" placeholder="—" onblur="updateKpiMonthly('${kpi.key}','${m}','actual',this.value)" style="${inputStyle}"></td>`;
+    });
+
+    const goalSummary = goalTotal ? (isPercent ? (goalTotal/12).toFixed(1)+'%' : goalTotal.toLocaleString()) : '—';
+    const actualSummary = actualTotal ? (isPercent ? (filledMonths ? (actualTotal/filledMonths).toFixed(1)+'%' : '—') : actualTotal.toLocaleString()) : '—';
+
+    html += `<tr${idx > 0 ? ' class="kpi-group-border"' : ''}>
+      <td rowspan="2" style="padding:10px 14px;vertical-align:middle;border-right:1px solid var(--cream-dark);">
+        <div class="kpi-group-label">${kpi.label}</div>
+        <span style="display:inline-block;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${s.bg};color:var(--cream);cursor:pointer;margin-top:4px;" onclick="cycleKpiStatus('${kpi.key}')" title="Click to change status">${s.label}</span>
+      </td>
+      <td style="padding:5px 10px;border-right:1px solid var(--cream-dark);">
+        <div class="kpi-row-type" style="color:var(--green);margin-bottom:3px;">Goal</div>
+        <input class="kpi-set-all" type="number" min="0" placeholder="set all…" title="Type a number + Enter to apply to all months" onkeydown="if(event.key==='Enter'||event.key==='Tab'){kpiSetAllGoals('${kpi.key}',this.value);this.value='';event.preventDefault();}">
+      </td>
+      ${goalCells.join('')}
+      <td style="text-align:center;font-size:12px;color:var(--ink-mute);font-weight:600;padding:5px 8px;">${goalSummary}</td>
+    </tr>
+    <tr>
+      <td style="padding:5px 10px;border-right:1px solid var(--cream-dark);">
+        <div class="kpi-row-type" style="color:var(--amber);">Actual</div>
+      </td>
+      ${actualCells.join('')}
+      <td style="text-align:center;font-size:12px;font-weight:700;padding:5px 8px;">${actualSummary}</td>
+    </tr>`;
   });
-  html += '</div>';
+
+  html += `</tbody></table>
+    </div>
+  </div>
+  <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:var(--ink-mute);">
+    <span>Top row = Goal &nbsp;·&nbsp; Bottom row = Actual &nbsp;·&nbsp; Click the status badge to cycle On Track → At Risk → Off Track</span>
+  </div>
+  <div style="margin-top:6px;display:flex;gap:14px;font-size:11px;">
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(61,90,76,0.4);border-radius:2px;display:inline-block;"></span><span style="color:var(--ink-mute);">Met goal</span></span>
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(196,135,58,0.5);border-radius:2px;display:inline-block;"></span><span style="color:var(--ink-mute);">≥ 80% of goal</span></span>
+    <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:rgba(192,57,43,0.4);border-radius:2px;display:inline-block;"></span><span style="color:var(--ink-mute);">Below 80%</span></span>
+  </div>`;
+
   c.innerHTML = html;
 }
 
@@ -1286,8 +1392,12 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
   const offers = strategyData?.offers_data || [];
   const dashProducts = strategyData?.dashboard_products || [];
   const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const revGoal = parseFloat(kpis.revenue?.target) || 0;
-  const leadsGoal = parseFloat(kpis.leads?.target) || 0;
+  const getKpiGoal = (kpiKey, month) => {
+    const monthly = kpis[kpiKey]?.monthly?.[month];
+    if (monthly?.goal !== undefined && monthly.goal !== '') return parseFloat(monthly.goal) || 0;
+    return parseFloat(kpis[kpiKey]?.target) || 0;
+  };
+  const getKpiLeadsGoal = m => getKpiGoal('leads', m);
 
   const fmt = n => {
     const v = parseFloat(n)||0;
@@ -1304,8 +1414,9 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
     const md = mfRows[m] || {};
     const rev = (md.revenue||[]).reduce((s,r)=>s+(parseFloat(r.amount)||0), 0);
     const exp = [...(md.fixedExpenses||[]),...(md.variableExpenses||[])].reduce((s,e)=>s+(parseFloat(e.amount)||0), 0);
+    const revGoal = getKpiGoal('revenue', m);
     totRevGoal += revGoal; totRevActual += rev; totExp += exp;
-    return { m, label: shortLabel(m), rev, exp, profit: rev-exp, hasData: rev>0||exp>0 };
+    return { m, label: shortLabel(m), rev, exp, profit: rev-exp, hasData: rev>0||exp>0, revGoal };
   });
   const totProfit = totRevActual - totExp;
 
@@ -1321,9 +1432,10 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
   let totLeadsGoal=0, totLeadsActual=0;
   const leadsCols = months.map(m => {
     const actual = parseFloat(mfRows[m]?.extras?.leads) || 0;
-    totLeadsGoal += leadsGoal;
+    const lg = getKpiLeadsGoal(m);
+    totLeadsGoal += lg;
     totLeadsActual += actual;
-    return { m, actual };
+    return { m, actual, leadsGoal: lg };
   });
 
   // Normalize dashboard_products to [{id, goal}] (handles old string-array format)
@@ -1358,13 +1470,13 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
     <tbody>
       <tr class="op-row-muted">
         <td class="op-row-label">Revenue Goal</td>
-        ${mfCols.map(()=>`<td>${revGoal?fmt(revGoal):'—'}</td>`).join('')}
-        <td class="op-total-col">${revGoal?fmt(totRevGoal):'—'}</td>
+        ${mfCols.map(c=>`<td>${c.revGoal?fmt(c.revGoal):'—'}</td>`).join('')}
+        <td class="op-total-col">${totRevGoal?fmt(totRevGoal):'—'}</td>
       </tr>
       <tr>
         <td class="op-row-label">Revenue Actual</td>
-        ${mfCols.map(c=>valCell(c.rev, c.hasData, revGoal||null)).join('')}
-        <td class="op-total-col" style="${totRevActual?'font-weight:700;':''}${totRevActual&&revGoal?(totRevActual>=totRevGoal?'color:var(--green);':'color:var(--amber);'):''}">${totRevActual?fmt(totRevActual):'—'}</td>
+        ${mfCols.map(c=>valCell(c.rev, c.hasData, c.revGoal||null)).join('')}
+        <td class="op-total-col" style="${totRevActual?'font-weight:700;':''}${totRevActual&&totRevGoal?(totRevActual>=totRevGoal?'color:var(--green);':'color:var(--amber);'):''}">${totRevActual?fmt(totRevActual):'—'}</td>
       </tr>
       <tr>
         <td class="op-row-label">Expenses</td>
@@ -1391,8 +1503,8 @@ function buildDashboardHTML(mfRows, months, weekAppts, weekTasks) {
     <tbody>
       <tr class="op-row-muted">
         <td class="op-row-label">Leads Goal</td>
-        ${months.map(()=>`<td>${leadsGoal||'—'}</td>`).join('')}
-        <td class="op-total-col">${leadsGoal?totLeadsGoal:'—'}</td>
+        ${leadsCols.map(c=>`<td>${c.leadsGoal||'—'}</td>`).join('')}
+        <td class="op-total-col">${totLeadsGoal||'—'}</td>
       </tr>
       <tr>
         <td class="op-row-label">Leads Actual</td>
